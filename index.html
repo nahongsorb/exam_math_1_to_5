@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบคลังข้อสอบติวเข้า ม.1 โรงเรียนดัง</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Background decorative elements -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <!-- Header / Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo" id="header-logo">
+        <span class="logo-txt-primary">Tutor</span><span class="logo-txt-secondary">Exam</span>
+      </div>
+      
+      <div class="header-nav">
+        <!-- Student Info (Hidden when logged out) -->
+        <div id="user-info-area" class="user-info-area hidden">
+          <span class="user-badge">
+            <span class="badge-dot"></span>
+            <span id="user-nickname-display">ชื่อเล่น</span>
+          </span>
+        </div>
+        
+        <button id="btn-show-leaderboard" class="btn btn-secondary hidden">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          อันดับคะแนน (Leaderboard)
+        </button>
+
+        <button id="btn-show-admin" class="btn btn-secondary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          สำหรับคุณครู
+        </button>
+
+        <button id="btn-logout" class="btn btn-danger hidden">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          ออกจากระบบ
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main class="app-body">
+    
+    <!-- Config Alert Banner (Displays if API_URL is empty) -->
+    <div id="config-alert-banner" class="alert-banner hidden">
+      <div class="alert-content">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:12px; color:var(--warning-color);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>
+          <strong>แจ้งเตือนสำหรับคุณครู:</strong> ระบบยังไม่ได้เชื่อมต่อ Google Sheet กรุณานำ URL จากการ Deploy Google Apps Script มาใส่ในไฟล์ <code>config.js</code> เพื่อให้ฐานข้อมูลทำงานได้สมบูรณ์
+          <button id="btn-show-setup-instructions" class="btn-text">ดูวิธีการตั้งค่าโดยละเอียด</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. AUTHENTICATION SECTION (LOGIN / REGISTER) -->
+    <section id="auth-section" class="view-section active">
+      <div class="auth-card glass-panel">
+        
+        <div class="auth-tabs">
+          <button id="tab-login" class="auth-tab active">เข้าสู่ระบบ</button>
+          <button id="tab-register" class="auth-tab">ลงทะเบียนนักเรียนใหม่</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="form-login" class="auth-form active">
+          <h2 class="auth-title">เข้าสู่ระบบเพื่อทำข้อสอบ</h2>
+          <p class="auth-subtitle">เตรียมพร้อมสำหรับสอบเข้า ม.1 โรงเรียนดัง</p>
+          
+          <div class="form-group">
+            <label for="login-username">ชื่อผู้ใช้งาน (Username)</label>
+            <input type="text" id="login-username" placeholder="กรอกชื่อผู้ใช้งานภาษาอังกฤษ/ตัวเลข" required autocomplete="username">
+          </div>
+          
+          <div class="form-group">
+            <label for="login-password">รหัสผ่าน (Password)</label>
+            <input type="password" id="login-password" placeholder="กรอกรหัสผ่าน" required autocomplete="current-password">
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-block">
+            เข้าสู่ระบบ
+            <span class="spinner hidden" id="login-spinner"></span>
+          </button>
+          <div id="login-message" class="error-msg"></div>
+        </form>
+
+        <!-- Register Form -->
+        <form id="form-register" class="auth-form">
+          <h2 class="auth-title">ลงทะเบียนบัญชีใหม่</h2>
+          <p class="auth-subtitle">กรอกข้อมูลให้ครบถ้วนเพื่อสะสมคะแนนใน Leaderboard</p>
+          
+          <div class="form-group">
+            <label for="register-username">ชื่อผู้ใช้งาน (Username)</label>
+            <input type="text" id="register-username" placeholder="ภาษาอังกฤษหรือตัวเลข 4 หลักขึ้นไป" required autocomplete="username">
+          </div>
+          
+          <div class="form-group">
+            <label for="register-password">รหัสผ่าน (Password)</label>
+            <input type="password" id="register-password" placeholder="ตั้งรหัสผ่านสำหรับการเข้าสอบ" required autocomplete="new-password">
+          </div>
+
+          <div class="form-group">
+            <label for="register-confirm-password">ยืนยันรหัสผ่าน (Confirm Password)</label>
+            <input type="password" id="register-confirm-password" placeholder="กรอกรหัสผ่านอีกครั้ง" required autocomplete="new-password">
+          </div>
+
+          <div class="form-group">
+            <label for="register-nickname">ชื่อเล่นภาษาไทย (Nickname)</label>
+            <input type="text" id="register-nickname" placeholder="กรอกชื่อเล่นเพื่อแสดงในตารางคะแนน" required>
+          </div>
+          
+          <button type="submit" class="btn btn-success btn-block">
+            ลงทะเบียนสร้างบัญชี
+            <span class="spinner hidden" id="register-spinner"></span>
+          </button>
+          <div id="register-message" class="error-msg"></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 2. EXAM SELECTION PORTAL SECTION -->
+    <section id="portal-section" class="view-section">
+      <div class="portal-header">
+        <h1 class="page-title">คลังข้อสอบ ติวเข้า ม.1 เทอม 2</h1>
+        <p class="page-subtitle">เลือกชุดข้อสอบที่คุณครูเปิดให้ทดสอบเพื่อเริ่มทำคะแนน</p>
+      </div>
+
+      <div class="portal-grid">
+        <!-- Exam set cards will be generated dynamically here -->
+        <div id="exam-cards-container" class="exam-grid"></div>
+        
+        <!-- Sidebar: Leaderboard Quick View -->
+        <div class="portal-sidebar glass-panel">
+          <div class="sidebar-header">
+            <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; color:var(--secondary-color);"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> 5 อันดับแรกในห้อง</h3>
+          </div>
+          <ol id="mini-leaderboard" class="mini-leaderboard">
+            <li class="loading-placeholder">กำลังโหลดข้อมูลการจัดอันดับ...</li>
+          </ol>
+          <button id="btn-sidebar-view-all" class="btn btn-text btn-block" style="text-align:center;">ดูอันดับทั้งหมด &rarr;</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. FULL LEADERBOARD SECTION -->
+    <section id="leaderboard-section" class="view-section">
+      <div class="section-container glass-panel">
+        <div class="section-header">
+          <h2 class="section-title">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--secondary-color); margin-right:8px;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            ตารางคะแนนและอันดับสูงสุดของห้องเรียน (Leaderboard)
+          </h2>
+          <button id="btn-leaderboard-back" class="btn btn-secondary">ย้อนกลับหน้าแรก</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 80px;">อันดับ</th>
+                <th>ชื่อเล่น</th>
+                <th style="text-align: center;">ชุดที่ 1</th>
+                <th style="text-align: center;">ชุดที่ 2</th>
+                <th style="text-align: center;">ชุดที่ 3</th>
+                <th style="text-align: center;">ชุดที่ 4</th>
+                <th style="text-align: center;">ชุดที่ 5</th>
+                <th style="text-align: center; font-weight: bold; color: var(--secondary-color);">คะแนนรวม</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboard-table-body">
+              <tr>
+                <td colspan="8" style="text-align: center; padding: 30px;">กำลังโหลดตารางคะแนน...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. EXAM WORKSPACE SECTION (SPLIT SCREEN) -->
+    <section id="exam-workspace-section" class="view-section">
+      <div class="workspace-container">
+        
+        <!-- Left Pane: PDF Viewer -->
+        <div class="pdf-pane glass-panel">
+          <div class="pane-header">
+            <div class="pane-title">
+              <span id="exam-set-title-workspace">ข้อสอบชุดที่ 1</span>
+            </div>
+            
+            <div class="pdf-controls">
+              <button id="btn-pdf-prev" class="btn-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <span id="pdf-page-indicator" class="page-indicator">หน้า 1 / 10</span>
+              <button id="btn-pdf-next" class="btn-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              
+              <div class="divider"></div>
+              
+              <button id="btn-zoom-out" class="btn-icon" title="ย่อ">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <span id="zoom-indicator">100%</span>
+              <button id="btn-zoom-in" class="btn-icon" title="ขยาย">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+            </div>
+          </div>
+          
+          <div class="pdf-image-container" id="pdf-container">
+            <img src="" alt="คำถามข้อสอบ" id="pdf-page-image" class="pdf-image">
+          </div>
+        </div>
+
+        <!-- Right Pane: Answer Sheet -->
+        <div class="answer-pane glass-panel">
+          <div class="pane-header">
+            <div class="pane-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--secondary-color); margin-right:6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              กระดาษคำตอบ (30 ข้อ)
+            </div>
+            
+            <button id="btn-submit-exam" class="btn btn-primary">
+              ส่งกระดาษคำตอบ
+              <span class="spinner hidden" id="submit-spinner"></span>
+            </button>
+          </div>
+
+          <div class="answer-sheet-info">
+            <span>คำแนะนำ: เลือกตัวเลือก 1, 2, 3 หรือ 4 ตามข้อสอบ และสามารถกดปุ่มล้าง (Clear) ได้หากต้องการยกเลิกคำตอบในข้อนั้นๆ</span>
+          </div>
+
+          <!-- Answer Sheet Rows -->
+          <div class="answer-sheet-rows" id="answer-sheet-form">
+            <!-- 30 Rows will be generated by JavaScript -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 5. RESULTS SCREEN SECTION -->
+    <section id="result-section" class="view-section">
+      <div class="result-container glass-panel">
+        <h2 class="result-header">ส่งข้อสอบเรียบร้อยแล้ว!</h2>
+        
+        <div class="score-card">
+          <div class="score-label" id="result-set-title">คะแนนสอบของคุณสำหรับ ชุดที่ 1</div>
+          <div class="score-number"><span id="result-score-val">0</span> <span class="score-slash">/</span> <span id="result-total-val">30</span></div>
+          <div class="score-percentage" id="result-percent-val">0%</div>
+        </div>
+
+        <div id="result-answers-released-banner" class="alert-info hidden">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px; color:var(--success-color);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          คุณครูเปิดเผยคำเฉลยแล้ว! คุณสามารถตรวจสอบข้อผิดพลาดและข้อที่ตอบถูกได้จากตารางการตรวจด้านล่าง
+        </div>
+
+        <div id="result-answers-hidden-banner" class="alert-warning">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px; color:var(--warning-color);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          ระบบบันทึกคะแนนรวมแล้ว แต่คุณครูปิดฟังก์ชันเฉลยรายละเอียดข้อที่ผิดเอาไว้เพื่อความปลอดภัยในการทำข้อสอบ
+        </div>
+
+        <h3 class="review-title">ตารางตรวจสอบคำตอบของคุณ</h3>
+        <div class="review-grid" id="result-review-grid">
+          <!-- 30 boxes of question status (green/red) will be here -->
+        </div>
+
+        <div class="result-actions">
+          <button id="btn-result-portal" class="btn btn-primary">กลับสู่หน้าแรก Portal</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. TEACHER ADMIN SECTION -->
+    <section id="teacher-admin-section" class="view-section">
+      
+      <!-- Admin Authentication Modal (if not logged in as teacher) -->
+      <div id="admin-auth-panel" class="admin-auth-panel glass-panel hidden">
+        <h2 class="auth-title">ล็อกอินสิทธิ์คุณครู (Admin)</h2>
+        <p class="auth-subtitle">กรุณาระบุ Username และ Password เพื่อเข้าแผงควบคุมระบบ</p>
+        
+        <div class="form-group">
+          <label for="admin-username">ชื่อผู้ใช้งานแอดมิน (Admin Username)</label>
+          <input type="text" id="admin-username" placeholder="กรอกชื่อผู้ใช้งานคุณครู" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="admin-password">รหัสผ่านแอดมิน (Admin Password)</label>
+          <input type="password" id="admin-password" placeholder="กรอกรหัสผ่านคุณครู" required>
+        </div>
+        
+        <button id="btn-admin-auth-submit" class="btn btn-primary btn-block">
+          ยืนยันเข้าใช้สิทธิ์คุณครู
+        </button>
+        <button id="btn-admin-auth-cancel" class="btn btn-secondary btn-block" style="margin-top:10px;">
+          ยกเลิก
+        </button>
+        <div id="admin-auth-message" class="error-msg"></div>
+      </div>
+
+      <!-- Main Admin Dashboard -->
+      <div id="admin-dashboard-panel" class="admin-dashboard-panel glass-panel hidden">
+        <div class="admin-header">
+          <h2 class="section-title">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--secondary-color); margin-right:8px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            แผงควบคุมระบบสำหรับคุณครู (Teacher Dashboard)
+          </h2>
+          <button id="btn-admin-close" class="btn btn-secondary">ย้อนกลับหน้าแรก Portal</button>
+        </div>
+
+        <!-- Admin Tab Navigation -->
+        <div class="admin-tabs">
+          <button class="admin-tab active" data-tab="admin-tab-exams">ตั้งค่าเปิด-ปิดข้อสอบ & เฉลย</button>
+          <button class="admin-tab" data-tab="admin-tab-submissions">ดูผลคะแนนการส่งสอบ</button>
+          <button class="admin-tab" data-tab="admin-tab-students">รายชื่อนักเรียนในระบบ</button>
+        </div>
+
+        <!-- TAB 1: EXAM SETTINGS -->
+        <div id="admin-tab-exams" class="admin-tab-content active">
+          <div class="settings-layout">
+            
+            <!-- Set selector sidebar -->
+            <div class="set-selector-panel">
+              <h4>เลือกชุดข้อสอบ</h4>
+              <div class="set-selector-buttons">
+                <button class="btn-set-select active" data-set="1">ข้อสอบชุดที่ 1</button>
+                <button class="btn-set-select" data-set="2">ข้อสอบชุดที่ 2</button>
+                <button class="btn-set-select" data-set="3">ข้อสอบชุดที่ 3</button>
+                <button class="btn-set-select" data-set="4">ข้อสอบชุดที่ 4</button>
+                <button class="btn-set-select" data-set="5">ข้อสอบชุดที่ 5</button>
+              </div>
+            </div>
+
+            <!-- Set config form -->
+            <div class="set-config-details glass-panel">
+              <h3 id="admin-set-config-title" style="margin-bottom:15px; color:var(--secondary-color);">ตั้งค่า: ข้อสอบชุดที่ 1</h3>
+              
+              <form id="form-admin-exam-settings">
+                <div class="settings-row">
+                  <div class="form-group flex-1">
+                    <label for="admin-exam-status">สถานะระบบการสอบ</label>
+                    <select id="admin-exam-status" class="form-control">
+                      <option value="open">เปิดระบบให้ทำทันที (Manual Open)</option>
+                      <option value="closed">ปิดระบบการทำทันที (Manual Closed)</option>
+                      <option value="scheduled">เปิดสอบตามช่วงเวลาที่ระบุ (Scheduled)</option>
+                    </select>
+                  </div>
+                  
+                  <div class="form-group flex-1">
+                    <label for="admin-exam-release-answers">การแสดงรายละเอียดเฉลยให้นักเรียน</label>
+                    <select id="admin-exam-release-answers" class="form-control">
+                      <option value="false">แสดงเฉพาะคะแนนรวม (ซ่อนเฉลยรายละเอียดข้อผิด)</option>
+                      <option value="true">อนุญาตให้นักเรียนดูเฉลยของทุกข้อหลังจากส่งเสร็จ</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Schedule Times (Active only if scheduled is selected) -->
+                <div class="settings-row schedule-inputs-row" id="schedule-inputs-row">
+                  <div class="form-group flex-1">
+                    <label for="admin-exam-start-time">เวลาเริ่มเปิดสอบ (Start Date/Time)</label>
+                    <input type="datetime-local" id="admin-exam-start-time" class="form-control">
+                  </div>
+                  <div class="form-group flex-1">
+                    <label for="admin-exam-end-time">เวลาปิดการส่งคำตอบ (End Date/Time)</label>
+                    <input type="datetime-local" id="admin-exam-end-time" class="form-control">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label style="font-weight:600; margin-bottom:10px; display:block;">ตั้งค่าเฉลยที่ถูกต้อง (30 ข้อ):</label>
+                  
+                  <div class="admin-keys-grid" id="admin-keys-grid">
+                    <!-- 30 multiple choice inputs for the teacher -->
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="margin-top:15px;">
+                  บันทึกการตั้งค่าทั้งหมดของชุดนี้
+                  <span class="spinner hidden" id="save-settings-spinner"></span>
+                </button>
+                <div id="admin-save-message" class="success-msg" style="margin-top:10px;"></div>
+              </form>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- TAB 2: SUBMISSIONS & SCORES -->
+        <div id="admin-tab-submissions" class="admin-tab-content">
+          <div class="filter-bar">
+            <input type="text" id="input-search-submission" placeholder="ค้นหาด้วยชื่อเล่น หรือ ชื่อผู้ใช้..." class="form-control search-input">
+            <select id="select-filter-set" class="form-control filter-select">
+              <option value="all">ดูทุกชุดข้อสอบ</option>
+              <option value="1">ชุดที่ 1</option>
+              <option value="2">ชุดที่ 2</option>
+              <option value="3">ชุดที่ 3</option>
+              <option value="4">ชุดที่ 4</option>
+              <option value="5">ชุดที่ 5</option>
+            </select>
+            <button id="btn-export-submissions-csv" class="btn btn-secondary">ส่งออกเป็นไฟล์ CSV</button>
+            <button id="btn-refresh-submissions" class="btn btn-secondary">
+              โหลดข้อมูลใหม่
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>เวลาที่ส่ง</th>
+                  <th>ชื่อผู้ใช้ (Username)</th>
+                  <th>ชื่อเล่น</th>
+                  <th>ชุดที่</th>
+                  <th>คะแนนที่ได้</th>
+                  <th>คำตอบที่ส่ง</th>
+                </tr>
+              </thead>
+              <tbody id="table-body-submissions">
+                <tr>
+                  <td colspan="6" style="text-align:center; padding:20px;">ไม่พบข้อมูลการส่งข้อสอบ</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: REGISTERED USERS -->
+        <div id="admin-tab-students" class="admin-tab-content">
+          <div class="filter-bar">
+            <h4>รายชื่อนักเรียนและคุณครูทั้งหมดในระบบ</h4>
+          </div>
+          <div class="table-responsive" style="max-width: 600px; margin: 0 auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ชื่อผู้ใช้ (Username)</th>
+                  <th>ชื่อเล่น (Nickname)</th>
+                  <th>สิทธิ์การเข้าถึง (Role)</th>
+                </tr>
+              </thead>
+              <tbody id="table-body-users">
+                <!-- User rows will go here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- SETUP INSTRUCTIONS MODAL (MODERN BOX) -->
+  <div id="setup-instructions-modal" class="modal-overlay hidden">
+    <div class="modal-card glass-panel">
+      <div class="modal-header">
+        <h3>คู่มือการเชื่อมต่อฐานข้อมูล Google Sheets</h3>
+        <button id="btn-close-instructions" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <ol class="setup-steps">
+          <li>
+            <strong>สร้าง Google Sheet ใหม่:</strong>
+            <p>เปิด Google Sheets ขึ้นมา 1 แผ่น ว่างเปล่า</p>
+          </li>
+          <li>
+            <strong>เปิด Apps Script:</strong>
+            <p>ไปที่เมนูด้านบน เลือก <strong>ส่วนขยาย > Apps Script</strong></p>
+          </li>
+          <li>
+            <strong>วางโค้ด API:</strong>
+            <p>เปิดไฟล์ <code>google_apps_script.js</code> ในโปรเจกต์ คัดลอกโค้ดทั้งหมด ไปวางทับลงในหน้าต่างของ Apps Script</p>
+          </li>
+          <li>
+            <strong>บันทึกและตั้งค่าตารางเริ่มต้น:</strong>
+            <p>คลิกปุ่มบันทึก (แผ่นดิสก์) จากนั้นเลือกฟังก์ชัน <code>setup</code> ในช่องเลือกฟังก์ชัน และกดปุ่ม <strong>"เรียกใช้งาน (Run)"</strong> ด้านบน เพื่อสร้างชีทที่จำเป็นอัตโนมัติ</p>
+          </li>
+          <li>
+            <strong>Deploy เป็น Web App:</strong>
+            <p>คลิกปุ่ม <strong>ทำให้ใช้งานได้ (Deploy) > การปรับใช้ใหม่ (New deployment)</strong> เลือกประเภทเป็น <strong>"เว็บแอป (Web App)"</strong></p>
+            <ul>
+              <li>เรียกใช้งานในฐานะ: <strong>ฉัน (อีเมลของคุณครู)</strong></li>
+              <li>ผู้มีสิทธิ์เข้าถึง: <strong>ทุกคน (Anyone)</strong></li>
+            </ul>
+            <p>คลิก <strong>ทำให้ใช้งานได้ (Deploy)</strong> และยืนยันสิทธิ์อนุญาตความปลอดภัยของ Google ให้เสร็จสิ้น</p>
+          </li>
+          <li>
+            <strong>นำ URL มาเชื่อมต่อ:</strong>
+            <p>คัดลอก **URL ของเว็บแอป (Web App URL)** ที่ระบุลงท้ายด้วย <code>/exec</code> แล้วเปิดไฟล์ <code>config.js</code> นำ URL นั้นมาใส่ในตัวแปร <code>API_URL</code> และกดบันทึก</p>
+          </li>
+        </ol>
+      </div>
+      <div class="modal-footer">
+        <button id="btn-setup-modal-close" class="btn btn-primary">รับทราบและปิดหน้านี้</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay for API calls -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-spinner-box">
+      <div class="loading-spinner"></div>
+      <div id="loading-text" class="loading-text">กำลังประมวลผล...</div>
+    </div>
+  </div>
+
+  <!-- Configuration files -->
+  <script src="config.js"></script>
+  <!-- Client application logic -->
+  <script src="app.js"></script>
+
+</body>
+</html>
