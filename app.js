@@ -190,13 +190,28 @@ function setupEventListeners() {
   // Admin login submission
   document.getElementById("btn-admin-auth-submit").addEventListener("click", handleAdminAuth);
   
-  // Watch exam status type in admin to toggle schedule view
-  document.getElementById("admin-exam-status").addEventListener("change", (e) => {
-    const row = document.getElementById("schedule-inputs-row");
-    if (e.target.value === "scheduled") {
-      row.classList.add("active");
+  // Admin quick key input auto-fill
+  document.getElementById("admin-quick-key-input").addEventListener("input", (e) => {
+    const val = e.target.value;
+    let digits = [];
+    if (val.includes(",")) {
+      digits = val.split(",").map(x => x.trim()).filter(x => x !== "");
     } else {
-      row.classList.remove("active");
+      // Strip everything except 1-4 and split to characters
+      digits = val.replace(/[^1-4]/g, "").split("");
+    }
+    
+    // Auto-select dropdown choices based on parsed digits
+    const limit = Math.min(30, digits.length);
+    for (let i = 0; i < limit; i++) {
+      const qNum = i + 1;
+      const digit = digits[i];
+      if (["1", "2", "3", "4"].includes(digit)) {
+        const select = document.getElementById(`admin-key-q${qNum}`);
+        if (select) {
+          select.value = digit;
+        }
+      }
     }
   });
 }
@@ -774,6 +789,9 @@ function loadAdminSetSettings() {
   // Sheets return ISO or formatted datetime, we need "yyyy-MM-ddThh:mm" format for input
   document.getElementById("admin-exam-start-time").value = formatDateForInput(exam.start_time);
   document.getElementById("admin-exam-end-time").value = formatDateForInput(exam.end_time);
+  
+  // Populate quick-fill input text box
+  document.getElementById("admin-quick-key-input").value = exam.answers || "";
   
   // Toggle schedule visual inputs
   const scheduleRow = document.getElementById("schedule-inputs-row");
