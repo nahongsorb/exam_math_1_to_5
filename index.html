@@ -7,9 +7,11 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Stylesheet -->
   <link rel="stylesheet" href="styles.css">
+  <!-- Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.407.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
@@ -20,12 +22,26 @@
   <!-- Header / Navigation -->
   <header class="app-header">
     <div class="header-container">
+      <!-- Left Logo Branding -->
       <div class="logo" id="header-logo">
-        <span class="logo-txt-primary">Tutor</span><span class="logo-txt-secondary">Exam</span>
+        <img src="logo.png" alt="Logo" class="logo-img">
       </div>
       
-      <div class="header-nav">
-        <!-- Student Info (Hidden when logged out) -->
+      <!-- Center Main Actions -->
+      <div class="header-nav-center">
+        <button id="btn-show-leaderboard" class="btn btn-secondary hidden">
+          <i data-lucide="award" class="icon-sm"></i>
+          <span class="btn-label">อันดับคะแนน (Leaderboard)</span>
+        </button>
+
+        <button id="btn-show-admin" class="btn btn-secondary">
+          <i data-lucide="settings" class="icon-sm"></i>
+          <span class="btn-label">สำหรับคุณครู</span>
+        </button>
+      </div>
+
+      <!-- Right User Actions & Settings -->
+      <div class="header-nav-right">
         <div id="user-info-area" class="user-info-area hidden">
           <span class="user-badge">
             <span class="badge-dot"></span>
@@ -33,18 +49,14 @@
           </span>
         </div>
         
-        <button id="btn-show-leaderboard" class="btn btn-secondary hidden">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-          <span class="btn-label">อันดับคะแนน (Leaderboard)</span>
-        </button>
-
-        <button id="btn-show-admin" class="btn btn-secondary">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          <span class="btn-label">สำหรับคุณครู</span>
+        <!-- Premium Theme Switcher -->
+        <button id="btn-theme-toggle" class="btn btn-icon btn-secondary" title="สลับโหมดสว่าง/มืด">
+          <i data-lucide="sun" class="theme-icon-light"></i>
+          <i data-lucide="moon" class="theme-icon-dark hidden"></i>
         </button>
 
         <button id="btn-logout" class="btn btn-danger hidden">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <i data-lucide="log-out" class="icon-sm"></i>
           <span class="btn-label">ออกจากระบบ</span>
         </button>
       </div>
@@ -57,7 +69,7 @@
     <!-- Config Alert Banner (Displays if API_URL is empty) -->
     <div id="config-alert-banner" class="alert-banner hidden">
       <div class="alert-content">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:12px; color:var(--warning-color);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <i data-lucide="alert-triangle" class="icon-warning icon-md" style="margin-right:12px;"></i>
         <div>
           <strong>แจ้งเตือนสำหรับคุณครู:</strong> ระบบยังไม่ได้เชื่อมต่อ Google Sheet กรุณานำ URL จากการ Deploy Google Apps Script มาใส่ในไฟล์ <code>config.js</code> เพื่อให้ฐานข้อมูลทำงานได้สมบูรณ์
           <button id="btn-show-setup-instructions" class="btn-text">ดูวิธีการตั้งค่าโดยละเอียด</button>
@@ -144,7 +156,7 @@
         <!-- Sidebar: Leaderboard Quick View -->
         <div class="portal-sidebar glass-panel">
           <div class="sidebar-header">
-            <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; color:var(--secondary-color);"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> 5 อันดับแรกในห้อง</h3>
+            <h3><i data-lucide="award" class="icon-sm" style="margin-right:6px; color:var(--secondary-color);"></i> 5 อันดับแรกในห้อง</h3>
           </div>
           <ol id="mini-leaderboard" class="mini-leaderboard">
             <li class="loading-placeholder">กำลังโหลดข้อมูลการจัดอันดับ...</li>
@@ -159,7 +171,7 @@
       <div class="section-container glass-panel">
         <div class="section-header">
           <h2 class="section-title">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--secondary-color); margin-right:8px;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <i data-lucide="trophy" class="icon-lg" style="color:var(--secondary-color); margin-right:8px;"></i>
             ตารางคะแนนและอันดับสูงสุดของห้องเรียน (Leaderboard)
           </h2>
           <button id="btn-leaderboard-back" class="btn btn-secondary">ย้อนกลับหน้าแรก</button>
@@ -202,21 +214,21 @@
             
             <div class="pdf-controls">
               <button id="btn-pdf-prev" class="btn-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                <i data-lucide="chevron-left"></i>
               </button>
               <span id="pdf-page-indicator" class="page-indicator">หน้า 1 / 10</span>
               <button id="btn-pdf-next" class="btn-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                <i data-lucide="chevron-right"></i>
               </button>
               
               <div class="divider"></div>
               
               <button id="btn-zoom-out" class="btn-icon" title="ย่อ">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <i data-lucide="minus"></i>
               </button>
               <span id="zoom-indicator">100%</span>
               <button id="btn-zoom-in" class="btn-icon" title="ขยาย">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <i data-lucide="plus"></i>
               </button>
             </div>
           </div>
@@ -230,7 +242,7 @@
         <div class="answer-pane glass-panel">
           <div class="pane-header">
             <div class="pane-title">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--secondary-color); margin-right:6px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              <i data-lucide="file-text" class="icon-sm" style="color:var(--secondary-color); margin-right:6px;"></i>
               กระดาษคำตอบ (30 ข้อ)
             </div>
             
@@ -265,12 +277,12 @@
         </div>
 
         <div id="result-answers-released-banner" class="alert-info hidden">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px; color:var(--success-color);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <i data-lucide="check-circle" class="icon-sm" style="margin-right:8px; color:var(--success-color);"></i>
           คุณครูเปิดเผยคำเฉลยแล้ว! คุณสามารถตรวจสอบข้อผิดพลาดและข้อที่ตอบถูกได้จากตารางการตรวจด้านล่าง
         </div>
 
         <div id="result-answers-hidden-banner" class="alert-warning">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px; color:var(--warning-color);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <i data-lucide="alert-circle" class="icon-sm" style="margin-right:8px; color:var(--warning-color);"></i>
           ระบบบันทึกคะแนนรวมแล้ว แต่คุณครูปิดฟังก์ชันเฉลยรายละเอียดข้อที่ผิดเอาไว้เพื่อความปลอดภัยในการทำข้อสอบ
         </div>
 
@@ -316,7 +328,7 @@
       <div id="admin-dashboard-panel" class="admin-dashboard-panel glass-panel hidden">
         <div class="admin-header">
           <h2 class="section-title">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--secondary-color); margin-right:8px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <i data-lucide="sliders" class="icon-lg" style="color:var(--secondary-color); margin-right:8px;"></i>
             แผงควบคุมระบบสำหรับคุณครู (Teacher Dashboard)
           </h2>
           <button id="btn-admin-close" class="btn btn-secondary">ย้อนกลับหน้าแรก Portal</button>

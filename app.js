@@ -30,6 +30,33 @@ const OFFLINE_MODE = {
   ]
 };
 
+// Theme Initialization and Toggle
+function initTheme() {
+  const savedTheme = localStorage.getItem("exam_theme") || "light";
+  const toggleBtn = document.getElementById("btn-theme-toggle");
+  
+  if (savedTheme === "dark") {
+    document.documentElement.classList.add("dark");
+    if (toggleBtn) {
+      toggleBtn.querySelector(".theme-icon-light").classList.add("hidden");
+      toggleBtn.querySelector(".theme-icon-dark").classList.remove("hidden");
+    }
+  } else {
+    document.documentElement.classList.remove("dark");
+    if (toggleBtn) {
+      toggleBtn.querySelector(".theme-icon-light").classList.remove("hidden");
+      toggleBtn.querySelector(".theme-icon-dark").classList.add("hidden");
+    }
+  }
+}
+
+// Refresh Lucide Icons on Dynamic Render
+function refreshIcons() {
+  if (window.lucide) {
+    window.lucide.createIcons();
+  }
+}
+
 // Check if configuration URL is missing
 function checkConfig() {
   const banner = document.getElementById("config-alert-banner");
@@ -45,10 +72,12 @@ function checkConfig() {
 
 // Initialize App
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   checkConfig();
   setupEventListeners();
   checkLoginStatus();
   generateWorkspaceAnswerSheet();
+  refreshIcons();
 });
 
 // Switch Views
@@ -75,6 +104,26 @@ function hideLoading() {
 
 // Setup all click / form listeners
 function setupEventListeners() {
+  // Theme toggler click listener
+  const toggleBtn = document.getElementById("btn-theme-toggle");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", () => {
+      const isDark = document.documentElement.classList.toggle("dark");
+      localStorage.setItem("exam_theme", isDark ? "dark" : "light");
+      
+      const lightIcon = toggleBtn.querySelector(".theme-icon-light");
+      const darkIcon = toggleBtn.querySelector(".theme-icon-dark");
+      
+      if (isDark) {
+        lightIcon.classList.add("hidden");
+        darkIcon.classList.remove("hidden");
+      } else {
+        lightIcon.classList.remove("hidden");
+        darkIcon.classList.add("hidden");
+      }
+    });
+  }
+
   // Logo redirect
   document.getElementById("header-logo").addEventListener("click", () => {
     if (currentUser) {
@@ -184,6 +233,16 @@ function setupEventListeners() {
 
   // Admin form save settings
   document.getElementById("form-admin-exam-settings").addEventListener("submit", saveAdminExamSettings);
+
+  // Toggle schedule inputs based on selected status dropdown
+  document.getElementById("admin-exam-status").addEventListener("change", (e) => {
+    const scheduleRow = document.getElementById("schedule-inputs-row");
+    if (e.target.value === "scheduled") {
+      scheduleRow.classList.add("active");
+    } else {
+      scheduleRow.classList.remove("active");
+    }
+  });
 
   // Admin filter submissions
   document.getElementById("input-search-submission").addEventListener("input", filterAdminSubmissions);
@@ -369,7 +428,9 @@ function generateWorkspaceAnswerSheet() {
           <input type="radio" name="q${q}" value="4" id="q${q}-c4" data-q="${q}">
           <label class="choice-label" for="q${q}-c4">4</label>
         </div>
-        <button type="button" class="btn-clear-choice" data-q="${q}" title="ล้างคำตอบ">L</button>
+        <button type="button" class="btn-clear-choice" data-q="${q}" title="ล้างคำตอบ">
+          <i data-lucide="trash-2" class="icon-xs"></i>
+        </button>
       </div>
     `;
     container.appendChild(row);
@@ -394,6 +455,8 @@ function generateWorkspaceAnswerSheet() {
       studentAnswers[q - 1] = null;
     });
   });
+  
+  refreshIcons();
 }
 
 // Load Portal Data (Available Exams and Leaderboard Sidebar)
@@ -423,33 +486,55 @@ async function loadPortal() {
     
     if (exam.status === "open") {
       statusText = "เปิดให้ทำข้อสอบ";
-      btnHtml = `<button class="btn btn-primary" onclick="launchExam(${exam.set_id})">เริ่มทำข้อสอบ</button>`;
+      btnHtml = `<button class="btn btn-primary btn-block" onclick="launchExam(${exam.set_id})">
+                  เริ่มทำข้อสอบ
+                  <i data-lucide="arrow-right" class="icon-xs"></i>
+                </button>`;
     } else if (exam.status === "closed") {
       statusText = "ปิดการส่งคำตอบ";
-      btnHtml = `<button class="btn btn-secondary" disabled>หมดเวลาสอบแล้ว</button>`;
+      btnHtml = `<button class="btn btn-secondary btn-block" disabled style="opacity: 0.65;">
+                  <i data-lucide="lock" class="icon-xs"></i>
+                  หมดเวลาสอบแล้ว
+                </button>`;
     } else if (exam.status === "upcoming") {
       statusText = "เตรียมระบบ (เร็วๆ นี้)";
       let schedInfo = "";
       if (exam.start_time) {
         const timeStr = new Date(exam.start_time).toLocaleString("th-TH", { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
-        schedInfo = `<div style="font-size:12px; margin-top:4px;">เปิดสอบ: ${timeStr}</div>`;
+        schedInfo = `<div class="exam-sched-info"><i data-lucide="calendar" class="icon-xxs"></i> เปิดสอบ: ${timeStr}</div>`;
       }
-      btnHtml = `<button class="btn btn-secondary" disabled>รอเปิดระบบ</button>${schedInfo}`;
+      btnHtml = `<button class="btn btn-secondary btn-block" disabled style="opacity: 0.65;">
+                  <i data-lucide="calendar-clock" class="icon-xs"></i>
+                  รอเปิดระบบ
+                </button>${schedInfo}`;
     }
     
     const myScore = savedScores[exam.set_id];
-    const scoreText = myScore !== undefined ? `<div class="score-display-portal">คะแนนของคุณ: ${myScore}/30 คะแนน</div>` : "";
+    const scoreText = myScore !== undefined ? `
+      <div class="score-display-portal">
+        <i data-lucide="check-circle" class="icon-xs"></i>
+        <span>คะแนนของคุณ: ${myScore}/30 คะแนน</span>
+      </div>` : "";
     
     card.innerHTML = `
       <div class="exam-card-header">
-        <span class="exam-set-num">ข้อสอบชุดที่ ${exam.set_id}</span>
+        <div>
+          <h3 class="exam-set-title">ข้อสอบชุดที่ ${exam.set_id}</h3>
+          <p class="exam-card-subtitle">ติวเนื้อหาเข้มข้น ม.1 เทอม 2</p>
+        </div>
         <span class="status-badge ${exam.status}">${statusText}</span>
       </div>
-      <div class="exam-card-body">
-        <div class="exam-details-txt">ติวเนื้อหาเข้มข้น ม.1 เทอม 2</div>
-        <div class="exam-details-txt" style="font-size:12px; margin-top:2px;">จำนวนข้อสอบ: 30 ข้อ</div>
-        ${scoreText}
+      <div class="exam-card-meta">
+        <div class="exam-meta-item">
+          <i data-lucide="help-circle" class="icon-xs"></i>
+          <span>30 ข้อ</span>
+        </div>
+        <div class="exam-meta-item">
+          <i data-lucide="clock" class="icon-xs"></i>
+          <span>60 นาที</span>
+        </div>
       </div>
+      ${scoreText}
       <div class="exam-card-footer">
         ${btnHtml}
       </div>
@@ -459,6 +544,26 @@ async function loadPortal() {
   
   // Load sidebar leaderboard
   loadLeaderboard(true);
+}
+
+// Generate a beautiful pastel avatar with student initials
+function getAvatarHtml(nickname) {
+  const firstChar = nickname ? nickname.trim().charAt(0).toUpperCase() : "?";
+  let hash = 0;
+  for (let i = 0; i < nickname.length; i++) {
+    hash = nickname.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = [
+    '#FF3B30', // Apple Red
+    '#FF9F0A', // Apple Orange
+    '#34C759', // Apple Green
+    '#0071E3', // Apple Blue
+    '#AF52DE', // Apple Purple
+    '#5856D6', // Apple Indigo
+    '#FF2D55'  // Apple Pink
+  ];
+  const color = colors[Math.abs(hash) % colors.length];
+  return `<div class="student-avatar" style="background-color: ${color};">${firstChar}</div>`;
 }
 
 // Load Leaderboard data (Sidebar Top 5 or Full Table)
@@ -485,9 +590,16 @@ async function loadLeaderboard(mini = true) {
     for (let i = 0; i < limit; i++) {
       const item = list[i];
       const li = document.createElement("li");
-      li.className = `rank-${i+1}`;
+      li.className = `rank-${i+1} mini-leaderboard-item`;
+      
+      let rankBadge = `<span class="leader-rank">${i+1}</span>`;
+      if (i === 0) rankBadge = `<span class="leader-rank rank-1">🥇</span>`;
+      else if (i === 1) rankBadge = `<span class="leader-rank rank-2">🥈</span>`;
+      else if (i === 2) rankBadge = `<span class="leader-rank rank-3">🥉</span>`;
+      
       li.innerHTML = `
-        <span class="leader-rank">${i+1}</span>
+        ${rankBadge}
+        ${getAvatarHtml(item.nickname)}
         <span class="leader-name">${escapeHtml(item.nickname)}</span>
         <span class="leader-score">${item.totalScore} คะแนน</span>
       `;
@@ -513,24 +625,31 @@ async function loadLeaderboard(mini = true) {
       const s5 = item.sets["5"] !== undefined ? item.sets["5"] : "-";
       
       let rankText = index + 1;
+      let rowClass = "";
       // Gold, Silver, Bronze icons
-      if (index === 0) rankText = "🥇";
-      else if (index === 1) rankText = "🥈";
-      else if (index === 2) rankText = "🥉";
+      if (index === 0) { rankText = "🥇"; rowClass = "row-rank-1"; }
+      else if (index === 1) { rankText = "🥈"; rowClass = "row-rank-2"; }
+      else if (index === 2) { rankText = "🥉"; rowClass = "row-rank-3"; }
       
+      tr.className = rowClass;
       tr.innerHTML = `
-        <td style="text-align: center; font-weight: bold; font-size:16px;">${rankText}</td>
-        <td style="font-weight: 500;">${escapeHtml(item.nickname)}</td>
+        <td style="text-align: center; font-weight: bold; font-size:18px;">${rankText}</td>
+        <td class="student-cell-with-avatar">
+          ${getAvatarHtml(item.nickname)}
+          <span class="student-nickname">${escapeHtml(item.nickname)}</span>
+        </td>
         <td style="text-align: center;">${s1}</td>
         <td style="text-align: center;">${s2}</td>
         <td style="text-align: center;">${s3}</td>
         <td style="text-align: center;">${s4}</td>
         <td style="text-align: center;">${s5}</td>
-        <td style="text-align: center; font-weight: bold; color: var(--secondary-color); font-size: 16px;">${item.totalScore}</td>
+        <td style="text-align: center; font-weight: bold; color: var(--primary-color); font-size: 16px;">${item.totalScore}</td>
       `;
       tbody.appendChild(tr);
     });
   }
+  
+  refreshIcons();
 }
 
 // Launch the Exam Workspace (Reset options and display PDF & Sheets)
@@ -652,9 +771,13 @@ async function submitAnswersForm() {
         const box = document.createElement("div");
         box.className = `review-box ${isCorrect ? 'correct' : 'incorrect'}`;
         
+        const icon = isCorrect ? '<i data-lucide="check" class="icon-xxs"></i>' : '<i data-lucide="x" class="icon-xxs"></i>';
         box.innerHTML = `
           <span class="review-box-num">ข้อ ${qNum}</span>
-          <span class="review-box-choice">ตอบ: ${myAns}</span>
+          <span class="review-box-choice">
+            ${icon}
+            ตอบ: ${myAns}
+          </span>
           ${!isCorrect ? `<span class="review-box-correct-hint">เฉลย: ${correctAns}</span>` : ""}
         `;
         grid.appendChild(box);
@@ -669,7 +792,7 @@ async function submitAnswersForm() {
         const qNum = i + 1;
         const myAns = cleanAnswers[i] !== "" ? cleanAnswers[i] : "-";
         const box = document.createElement("div");
-        box.className = "review-box";
+        box.className = "review-box score-only";
         box.innerHTML = `
           <span class="review-box-num">ข้อ ${qNum}</span>
           <span class="review-box-choice">ตอบ: ${myAns}</span>
@@ -678,6 +801,7 @@ async function submitAnswersForm() {
       }
     }
     
+    refreshIcons();
     showSection("result-section");
   } else {
     alert("เกิดข้อผิดพลาดในการส่งคำตอบ: " + res.message);
@@ -781,7 +905,7 @@ function renderAdminDashboard() {
     tr.innerHTML = `
       <td>${escapeHtml(u.username)}</td>
       <td>${escapeHtml(u.nickname)}</td>
-      <td><span class="user-badge" style="background:rgba(255,255,255,0.05); color:#fff; border:none;">${u.role}</span></td>
+      <td><span class="user-badge" style="background:rgba(255,255,255,0.05); color:var(--text-primary); border:none;">${u.role}</span></td>
     `;
     usersTbody.appendChild(tr);
   });
@@ -797,6 +921,8 @@ function renderAdminDashboard() {
   if (activeTab && activeTab.getAttribute("data-tab") === "admin-tab-analysis") {
     renderWrongAnswersAnalysis();
   }
+  
+  refreshIcons();
 }
 
 // Load configurations for Selected Set into admin form
@@ -863,7 +989,7 @@ function formatDateForInput(dateStr) {
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
     
-    return `${year}-${month}-${day}T${hours}-${minutes}`; // wait, html5 uses T separator
+    return `${year}-${month}-${day}T${hours}:${minutes}`; // html5 uses T and : separators
   } catch (e) {
     return "";
   }
@@ -950,7 +1076,10 @@ function renderAdminSubmissionsList() {
     tr.innerHTML = `
       <td>${formattedDate}</td>
       <td>${escapeHtml(sub.username)}</td>
-      <td style="font-weight:600;">${escapeHtml(sub.nickname)}</td>
+      <td class="student-cell-with-avatar">
+        ${getAvatarHtml(sub.nickname)}
+        <span class="student-nickname">${escapeHtml(sub.nickname)}</span>
+      </td>
       <td style="text-align:center;">ชุดที่ ${sub.set_id}</td>
       <td style="font-weight:bold; color:var(--success-color);">${sub.score} / 30</td>
       <td style="font-size:11px; color:var(--text-secondary); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${sub.answers}">
@@ -1291,10 +1420,10 @@ function renderWrongAnswersAnalysis() {
       <td style="text-align: center; font-weight: bold;">${qNum}</td>
       <td style="text-align: center;">
         <div class="wrong-rate-bar-container">
-          <div style="width: 60px; background: rgba(255,255,255,0.08); height: 8px; border-radius: 4px; overflow: hidden;">
-            <div style="width: ${wrongRate}%; background: ${severityClass === 'high-error' ? 'var(--danger-color)' : (severityClass === 'medium-error' ? 'var(--warning-color)' : 'var(--success-color)')}; height: 100%;"></div>
+          <div class="wrong-rate-bar-bg">
+            <div class="wrong-rate-bar-fill" style="width: ${wrongRate}%; background-color: ${severityClass === 'high-error' ? 'var(--danger-color)' : (severityClass === 'medium-error' ? 'var(--warning-color)' : 'var(--success-color)')};"></div>
           </div>
-          <span style="font-weight: 600; width: 35px; text-align: right;">${wrongRate}%</span>
+          <span class="wrong-rate-txt">${wrongRate}%</span>
         </div>
       </td>
       <td style="text-align: center;">${wrongCount} / ${totalSubmissions}</td>
@@ -1303,4 +1432,6 @@ function renderWrongAnswersAnalysis() {
     `;
     tbody.appendChild(tr);
   }
+  
+  refreshIcons();
 }
