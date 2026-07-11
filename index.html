@@ -144,6 +144,21 @@
 
     <!-- 2. EXAM SELECTION PORTAL SECTION -->
     <section id="portal-section" class="view-section">
+
+      <!-- Re-exam Alert Banner -->
+      <div id="re-exam-alert-banner" class="re-exam-banner hidden">
+        <div class="re-exam-banner-content">
+          <i data-lucide="alert-triangle" class="icon-warning icon-md"></i>
+          <div>
+            <strong>แจ้งเตือนสอบซ่อม:</strong> คุณมีข้อสอบซ่อมที่ต้องทำสะสมอยู่ <span id="re-exam-count">0</span> ชุด
+          </div>
+        </div>
+        <button id="btn-go-to-re-exam" class="btn btn-warning btn-sm">
+          เข้าสู่ห้องสอบซ่อม
+          <i data-lucide="arrow-right" class="icon-xs"></i>
+        </button>
+      </div>
+
       <div class="portal-header">
         <h1 class="page-title">คลังข้อสอบ ติวเข้า ม.1 เทอม 2</h1>
         <p class="page-subtitle">เลือกชุดข้อสอบที่คุณครูเปิดให้ทดสอบเพื่อเริ่มทำคะแนน</p>
@@ -380,6 +395,11 @@
                       <option value="true">อนุญาตให้นักเรียนดูเฉลยของทุกข้อหลังจากส่งเสร็จ</option>
                     </select>
                   </div>
+
+                  <div class="form-group flex-1">
+                    <label for="admin-exam-passing-score">เกณฑ์คะแนนสำหรับผ่าน (เต็ม 30 คะแนน)</label>
+                    <input type="number" id="admin-exam-passing-score" min="0" max="30" class="form-control" placeholder="เช่น 15">
+                  </div>
                 </div>
 
                 <!-- Schedule Times (Active only if scheduled is selected) -->
@@ -515,13 +535,14 @@
           <div class="filter-bar">
             <h4>รายชื่อนักเรียนและคุณครูทั้งหมดในระบบ</h4>
           </div>
-          <div class="table-responsive" style="max-width: 600px; margin: 0 auto;">
+          <div class="table-responsive" style="max-width: 800px; margin: 0 auto;">
             <table class="data-table">
               <thead>
                 <tr>
                   <th>ชื่อผู้ใช้ (Username)</th>
                   <th>ชื่อเล่น (Nickname)</th>
                   <th>สิทธิ์การเข้าถึง (Role)</th>
+                  <th style="text-align: center; width: 250px;">การจัดการสอบซ่อม (ชุด 1-5)</th>
                 </tr>
               </thead>
               <tbody id="table-body-users">
@@ -533,6 +554,49 @@
 
       </div>
 
+    </section>
+
+    <!-- 7. RE-EXAM ROOM SECTION -->
+    <section id="re-exam-room-section" class="view-section">
+      <div class="section-container glass-panel animate-fade-in">
+        <div class="admin-header" style="border-bottom: 1px solid var(--divider); padding-bottom: 15px; margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;">
+          <h2 class="section-title" style="display:flex; align-items:center; gap:8px; margin:0;">
+            <i data-lucide="flame" class="icon-lg" style="color:var(--danger-color);"></i>
+            ห้องสอบซ่อมคณิตศาสตร์ (Re-exam Room)
+          </h2>
+          <button id="btn-re-exam-back" class="btn btn-secondary">ย้อนกลับหน้าแรก</button>
+        </div>
+
+        <p class="section-subtitle" style="color:var(--text-secondary); margin-bottom: 25px; font-size:14px; line-height:1.6;">
+          💡 <strong>คำชี้แจงการสอบซ่อม:</strong> เติมคำตอบตัวเลขในแต่ละข้อให้ถูกต้อง (ข้อที่คำตอบเป็นเศษส่วน สามารถพิมพ์เศษส่วนอย่างต่ำ เช่น <code>1/2</code> หรือทศนิยม เช่น <code>0.5</code> ได้) จากนั้นกดปุ่ม "ตรวจ" หรือกด Enter เพื่อตรวจทันที หากตอบถูกช่องจะขึ้นสีเขียวพร้อมปลดล็อกข้อถัดไปโดยอัตโนมัติ (ไม่สามารถทำข้ามข้อได้) เมื่อตอบถูกครบทั้ง 10 ข้อจึงจะส่งแบบทดสอบเพื่อล้างสถานะสอบซ่อมได้สำเร็จ
+        </p>
+        
+        <div class="re-exam-workspace-layout">
+          <!-- Left side: Select which set to retake -->
+          <div class="re-exam-set-selector glass-panel">
+            <h4 style="margin-bottom:15px; color:var(--text-primary); font-size:15px; font-weight:600;">ชุดที่ต้องสอบซ่อม</h4>
+            <div id="re-exam-set-list" class="re-exam-set-buttons">
+              <!-- Re-exam sets buttons will be generated here -->
+            </div>
+          </div>
+
+          <!-- Right side: Questions progression sheet -->
+          <div class="re-exam-questions-card glass-panel" id="re-exam-questions-card">
+            <h3 id="re-exam-title-display" style="color:var(--danger-color); margin-bottom: 20px; font-size:18px; font-weight:600;">กรุณาเลือกชุดข้อสอบซ่อมทางด้านซ้าย</h3>
+            
+            <div class="re-exam-questions-flow" id="re-exam-questions-flow">
+              <!-- Questions with inputs will be generated here dynamically -->
+            </div>
+
+            <div class="re-exam-submit-area hidden" id="re-exam-submit-area" style="margin-top: 30px; border-top: 1px solid var(--divider); padding-top: 20px;">
+              <button id="btn-submit-re-exam" class="btn btn-danger btn-block">
+                ส่งผลการสอบซ่อมและล้างสถานะสอบซ่อม
+                <span class="spinner hidden" id="re-exam-submit-spinner"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
   </main>

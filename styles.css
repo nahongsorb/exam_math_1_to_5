@@ -1870,3 +1870,308 @@ p {
     gap: 8px;
   }
 }
+
+/* ==========================================================================
+   RE-EXAM SYSTEM STYLES
+   ========================================================================== */
+
+/* 1. Re-exam Notification Banner */
+.re-exam-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(255, 59, 48, 0.15), rgba(255, 159, 10, 0.15));
+  border: 1px solid rgba(255, 59, 48, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 16px 24px;
+  border-radius: var(--radius-card);
+  margin-bottom: var(--space-24);
+  box-shadow: var(--shadow-md);
+  animation: slideDown 0.4s ease-out;
+}
+
+.re-exam-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-primary);
+}
+
+.re-exam-banner-content strong {
+  color: var(--danger-color);
+  font-weight: 700;
+}
+
+/* 2. Re-exam Workspace Layout */
+.re-exam-workspace-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  margin-top: var(--space-20);
+}
+
+.re-exam-set-selector {
+  width: 260px;
+  flex-shrink: 0;
+  padding: 20px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--panel-border);
+}
+
+.re-exam-set-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-re-exam-set {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+  font-weight: 500;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+}
+
+.btn-re-exam-set:hover {
+  background: var(--btn-secondary-hover);
+  border-color: var(--primary-color);
+}
+
+.btn-re-exam-set.active {
+  background: var(--danger-glow);
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+  font-weight: 600;
+}
+
+.re-exam-questions-card {
+  flex: 1;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--panel-border);
+  background: var(--card-bg);
+  padding: 30px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* 3. Progressive Questions Flow */
+.re-exam-questions-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 550px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.re-exam-q-row {
+  padding: 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--panel-border);
+  border-left: 5px solid var(--text-secondary);
+  transition: all 0.3s ease;
+}
+
+.re-exam-q-row.locked {
+  opacity: 0.45;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.re-exam-q-row.active {
+  border-left-color: var(--primary-color);
+  background: rgba(0, 113, 227, 0.02);
+  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.05);
+  border-color: rgba(0, 113, 227, 0.2);
+}
+
+.re-exam-q-row.correct {
+  border-left-color: var(--success-color);
+  background: rgba(52, 199, 89, 0.03);
+  border-color: rgba(52, 199, 89, 0.2);
+}
+
+.re-exam-q-row.incorrect {
+  border-left-color: var(--danger-color);
+  background: rgba(255, 59, 48, 0.03);
+  border-color: rgba(255, 59, 48, 0.2);
+}
+
+.re-exam-q-text {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.re-exam-input-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 450px;
+}
+
+.re-exam-input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  transition: all var(--transition-speed);
+}
+
+.re-exam-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.re-exam-input.is-valid {
+  border-color: var(--success-color);
+  background-color: rgba(52, 199, 89, 0.08);
+  color: var(--success-color);
+}
+
+.re-exam-input.is-invalid {
+  border-color: var(--danger-color);
+  background-color: rgba(255, 59, 48, 0.08);
+  color: var(--danger-color);
+}
+
+.re-exam-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.re-exam-status-icon.check {
+  color: var(--success-color);
+}
+
+.re-exam-status-icon.cross {
+  color: var(--danger-color);
+}
+
+/* 4. Badges & Indicators */
+.badge-re-exam {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-badge);
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.badge-re-exam.pending {
+  background: rgba(255, 59, 48, 0.15);
+  color: var(--danger-color);
+  border: 1px solid rgba(255, 59, 48, 0.2);
+}
+
+.badge-re-exam.passed {
+  background: rgba(52, 199, 89, 0.15);
+  color: var(--success-color);
+  border: 1px solid rgba(52, 199, 89, 0.2);
+}
+
+/* Teacher Dashboard Badges */
+.teacher-re-exam-status-group {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.teacher-re-exam-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 26px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.teacher-re-exam-badge.pending {
+  background: rgba(255, 59, 48, 0.15);
+  color: var(--danger-color);
+  border-color: rgba(255, 59, 48, 0.25);
+}
+
+.teacher-re-exam-badge.pending:hover {
+  background: var(--danger-color);
+  color: white;
+}
+
+.teacher-re-exam-badge.passed {
+  background: rgba(52, 199, 89, 0.15);
+  color: var(--success-color);
+  border-color: rgba(52, 199, 89, 0.25);
+}
+
+.teacher-re-exam-badge.passed:hover {
+  background: var(--success-color);
+  color: white;
+}
+
+.teacher-re-exam-badge.none {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border-color: var(--panel-border);
+}
+
+.teacher-re-exam-badge.none:hover {
+  background: var(--btn-secondary-hover);
+  color: var(--text-primary);
+}
+
+/* 5. Error Shake & Animations */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsive adjustment */
+@media (max-width: 768px) {
+  .re-exam-workspace-layout {
+    flex-direction: column;
+  }
+  .re-exam-set-selector {
+    width: 100%;
+  }
+}

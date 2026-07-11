@@ -5,6 +5,74 @@ let currentPdfPage = 1;
 let pdfZoomScale = 1.0;
 let studentAnswers = Array(30).fill(null);
 
+// Re-exam active state
+let currentReExamSetId = null;
+let reExamStudentAnswers = Array(10).fill("");
+
+// Numerical progressive re-exam questions (10 questions per set)
+const RE_EXAM_QUESTIONS = {
+  1: [
+    { q: "1. จงหาค่า 48 ÷ 6 × 5 - 8", answer: ["32"] },
+    { q: "2. ถ้า 3/4 ของจำนวนหนึ่งเท่ากับ 24 จงหาจำนวนเดิม", answer: ["32"] },
+    { q: "3. จงหา ห.ร.ม. ของ 36 และ 54", answer: ["18"] },
+    { q: "4. สี่เหลี่ยมผืนผ้ามีความกว้าง 8 เซนติเมตร และยาว 15 เซนติเมตร จงหาพื้นที่ (ตารางเซนติเมตร)", answer: ["120"] },
+    { q: "5. จงหาค่าเฉลี่ยของจำนวน 8, 10, 12, 14 และ 16", answer: ["12"] },
+    { q: "6. ถุงใบหนึ่งมีลูกบอลสีแดง 5 ลูก สีน้ำเงิน 3 ลูก และสีเขียว 2 ลูก สุ่มหยิบลูกบอล 1 ลูก จงหาความน่าจะเป็นที่จะได้ลูกบอลสีแดง (ระบุเป็นเศษส่วนอย่างต่ำ เช่น 1/2 หรือทศนิยม เช่น 0.5)", answer: ["1/2", "0.5"] },
+    { q: "7. ถ้า 3x + 5 = 26 จงหาค่า x", answer: ["7"] },
+    { q: "8. ถังน้ำใบหนึ่งมีน้ำอยู่ 3/5 ของความจุทั้งหมด หากเติมน้ำเข้าไปอีก 24 ลิตร จะทำให้ถังมีน้ำเต็มพอดี จงหาความจุของถังน้ำใบนี้ (ลิตร)", answer: ["60"] },
+    { q: "9. ถังทรงสี่เหลี่ยมมุมฉากมีความกว้าง 4 เซนติเมตร ยาว 5 เซนติเมตร และสูง 6 เซนติเมตร จงหาปริมาตร (ลูกบาศก์เซนติเมตร)", answer: ["120"] },
+    { q: "10. สินค้าราคาป้าย 500 บาท ลดราคา 20% จงหาราคาหลังหักส่วนลด (บาท)", answer: ["400"] }
+  ],
+  2: [
+    { q: "1. จงหาค่า 50 - 4 × 8 + 6", answer: ["24"] },
+    { q: "2. ถ้า 2/5 ของจำนวนหนึ่งเท่ากับ 20 จงหาจำนวนเดิม", answer: ["50"] },
+    { q: "3. จงหา ค.ร.น. ของ 12 และ 18", answer: ["36"] },
+    { q: "4. วงกลมมีรัศมี 7 เซนติเมตร จงหาพื้นที่ (ตารางเซนติเมตร) (กำหนดค่า pi = 22/7)", answer: ["154"] },
+    { q: "5. จงหาค่าเฉลี่ยของจำนวน 15, 20, 25 และ 30", answer: ["22.5"] },
+    { q: "6. สุ่มหยิบการ์ด 1 ใบจากกล่องที่มีหมายเลข 1 ถึง 10 จงหาความน่าจะเป็นที่จะได้เลขคู่ (ระบุเป็นเศษส่วนอย่างต่ำ เช่น 1/2 หรือทศนิยม เช่น 0.5)", answer: ["1/2", "0.5"] },
+    { q: "7. ถ้า 4x - 7 = 25 จงหาค่า x", answer: ["8"] },
+    { q: "8. รูปสามเหลี่ยมมีฐานยาว 10 เซนติเมตร และสูง 12 เซนติเมตร จงหาพื้นที่ (ตารางเซนติเมตร)", answer: ["60"] },
+    { q: "9. ลูกบาศก์มีด้านยาวด้านละ 5 เซนติเมตร จงหาปริมาตร (ลูกบาศก์เซนติเมตร)", answer: ["125"] },
+    { q: "10. ฝากเงิน 1,000 บาท ได้อัตราดอกเบี้ย 5% ต่อปี เมื่อครบปีจะได้รับเงินรวมทั้งหมดกี่บาท", answer: ["1050"] }
+  ],
+  3: [
+    { q: "1. จงหาค่าของ 100 - 9 × 9", answer: ["19"] },
+    { q: "2. ถ้าครึ่งหนึ่งของจำนวนหนึ่งเท่ากับ 45 จงหาจำนวนเดิม", answer: ["90"] },
+    { q: "3. จงหา ห.ร.ม. ของ 20 และ 30", answer: ["10"] },
+    { q: "4. สี่เหลี่ยมจัตุรัสมีเส้นรอบรูปยาว 40 เซนติเมตร จงหาพื้นที่ (ตารางเซนติเมตร)", answer: ["100"] },
+    { q: "5. จงหาค่าเฉลี่ยของจำนวน 2, 4, 6, 8, 10", answer: ["6"] },
+    { q: "6. โยนเหรียญ 1 อัน 1 ครั้ง ความน่าจะเป็นที่จะออกหัวเป็นเท่าใด (เช่น 1/2 หรือ 0.5)", answer: ["1/2", "0.5"] },
+    { q: "7. ถ้า 5x + 10 = 50 จงหาค่า x", answer: ["8"] },
+    { q: "8. เดินทางด้วยความเร็ว 60 กม./ชม. เป็นเวลา 3 ชั่วโมง ได้ระยะทางกี่กิโลเมตร", answer: ["180"] },
+    { q: "9. ทรงกระบอกมีรัศมีฐาน 7 เซนติเมตร สูง 10 เซนติเมตร จงหาปริมาตร (ลูกบาศก์เซนติเมตร) (กำหนด pi = 22/7)", answer: ["1540"] },
+    { q: "10. ซื้อของมา 200 บาท ขายไป 250 บาท ได้กำไรกี่เปอร์เซ็นต์ (ไม่ต้องใส่เครื่องหมาย %)", answer: ["25"] }
+  ],
+  4: [
+    { q: "1. จงหาค่าของ 5 × (12 + 8) - 15", answer: ["85"] },
+    { q: "2. ถ้า 1/3 ของจำนวนหนึ่งเท่ากับ 15 จงหาจำนวนเดิม", answer: ["45"] },
+    { q: "3. จงหา ค.ร.น. ของ 8 และ 12", answer: ["24"] },
+    { q: "4. ที่ดินรูปสี่เหลี่ยมผืนผ้ามีพื้นที่ 200 ตารางเมตร กว้าง 10 เมตร จงหาความยาว (เมตร)", answer: ["20"] },
+    { q: "5. จงหาค่าเฉลี่ยของจำนวน 5, 15, 25", answer: ["15"] },
+    { q: "6. ทอดลูกเต๋า 1 ลูก ความน่าจะเป็นที่จะได้แต้มคู่เป็นเท่าใด (เช่น 1/2 หรือ 0.5)", answer: ["1/2", "0.5"] },
+    { q: "7. ถ้า 2x - 3 = 17 จงหาค่า x", answer: ["10"] },
+    { q: "8. ทำงาน 5 วัน ได้ค่าจ้าง 1,500 บาท ถ้าทำงาน 8 วัน จะได้ค่าจ้างกี่บาท", answer: ["2400"] },
+    { q: "9. กล่องกว้าง 2 ซม. ยาว 3 ซม. สูง 4 ซม. จงหาปริมาตร (ลูกบาศก์เซนติเมตร)", answer: ["24"] },
+    { q: "10. ซื้อของราคา 1,200 บาท ลดราคา 15% จะต้องจ่ายเงินกี่บาท", answer: ["1020"] }
+  ],
+  5: [
+    { q: "1. จงหาค่าของ 120 ÷ (4 × 5) + 9", answer: ["15"] },
+    { q: "2. ถ้า 2/3 ของจำนวนหนึ่งเท่ากับ 18 จงหาจำนวนเดิม", answer: ["27"] },
+    { q: "3. จงหา ห.ร.ม. ของ 15, 30 และ 45", answer: ["15"] },
+    { q: "4. รูปสามเหลี่ยมมีฐานยาว 8 เซนติเมตร สูง 5 เซนติเมตร จงหาพื้นที่ (ตารางเซนติเมตร)", answer: ["20"] },
+    { q: "5. จงหาค่าเฉลี่ยของจำนวน 10, 20, 30, 40", answer: ["25"] },
+    { q: "6. หยิบลูกบอล 1 ลูกจากกล่องที่มีสีขาว 4 ลูก สีดำ 4 ลูก จงหาความน่าจะเป็นที่จะได้สีขาว (เช่น 1/2 หรือ 0.5)", answer: ["1/2", "0.5"] },
+    { q: "7. ถ้า 6x - 4 = 32 จงหาค่า x", answer: ["6"] },
+    { q: "8. อัตราส่วนอายุ A ต่อ B เป็น 3:4 ถ้า A อายุ 15 ปี B จะอายุเท่าใด", answer: ["20"] },
+    { q: "9. ถังทรงลูกบาศก์ยาวด้านละ 10 เซนติเมตร บรรจุน้ำเต็มถัง ปริมาตรน้ำกี่ลิตร (ระบุเป็นจำนวนลิตร 1 ลิตร = 1,000 ลูกบาศก์เซนติเมตร)", answer: ["1"] },
+    { q: "10. ขายของราคา 600 บาท ได้กำไร 20% ราคาทุนของสินค้านี้กี่บาท", answer: ["500"] }
+  ]
+};
+
 // Admin config state
 let adminSelectedSet = 1;
 let adminAllData = null; // Stored admin data (users, exams, submissions)
@@ -193,6 +261,17 @@ function setupEventListeners() {
     showSection("portal-section");
     loadPortal();
   });
+
+  // Re-exam Action Listeners
+  document.getElementById("btn-go-to-re-exam").addEventListener("click", () => {
+    showSection("re-exam-room-section");
+    loadReExamRoom();
+  });
+  document.getElementById("btn-re-exam-back").addEventListener("click", () => {
+    showSection("portal-section");
+    loadPortal();
+  });
+  document.getElementById("btn-submit-re-exam").addEventListener("click", submitReExamAnswers);
 
   // Admin section buttons
   document.getElementById("btn-show-admin").addEventListener("click", openTeacherPanel);
@@ -462,12 +541,23 @@ function generateWorkspaceAnswerSheet() {
 // Load Portal Data (Available Exams and Leaderboard Sidebar)
 async function loadPortal() {
   showLoading("กำลังโหลดชุดข้อสอบ...");
-  const res = await apiCall("getExamStatus");
+  const res = await apiCall("getExamStatus", { username: currentUser ? currentUser.username : null });
   hideLoading();
   
   if (!res.success) {
     alert("ไม่สามารถโหลดข้อสอบได้: " + res.message);
     return;
+  }
+  
+  // Toggle re-exam alert banner
+  const banner = document.getElementById("re-exam-alert-banner");
+  if (banner) {
+    if (res.pending_re_exams && res.pending_re_exams.length > 0) {
+      document.getElementById("re-exam-count").innerText = res.pending_re_exams.length;
+      banner.classList.remove("hidden");
+    } else {
+      banner.classList.add("hidden");
+    }
   }
   
   const exams = res.data;
@@ -597,10 +687,15 @@ async function loadLeaderboard(mini = true) {
       else if (i === 1) rankBadge = `<span class="leader-rank rank-2">🥈</span>`;
       else if (i === 2) rankBadge = `<span class="leader-rank rank-3">🥉</span>`;
       
+      let reBadgeHtml = "";
+      if (item.pending_re_exams && item.pending_re_exams.length > 0) {
+        reBadgeHtml = `<span class="badge-re-exam pending" title="ต้องสอบซ่อมชุดที่ ${item.pending_re_exams.join(', ')}">🔴 ซ่อมชุด ${item.pending_re_exams.join(',')}</span>`;
+      }
+      
       li.innerHTML = `
         ${rankBadge}
         ${getAvatarHtml(item.nickname)}
-        <span class="leader-name">${escapeHtml(item.nickname)}</span>
+        <span class="leader-name">${escapeHtml(item.nickname)} ${reBadgeHtml}</span>
         <span class="leader-score">${item.totalScore} คะแนน</span>
       `;
       miniContainer.appendChild(li);
@@ -631,12 +726,17 @@ async function loadLeaderboard(mini = true) {
       else if (index === 1) { rankText = "🥈"; rowClass = "row-rank-2"; }
       else if (index === 2) { rankText = "🥉"; rowClass = "row-rank-3"; }
       
+      let reBadgeHtml = "";
+      if (item.pending_re_exams && item.pending_re_exams.length > 0) {
+        reBadgeHtml = `<span class="badge-re-exam pending" title="ต้องสอบซ่อมชุดที่ ${item.pending_re_exams.join(', ')}">🔴 ซ่อมชุด ${item.pending_re_exams.join(',')}</span>`;
+      }
+      
       tr.className = rowClass;
       tr.innerHTML = `
         <td style="text-align: center; font-weight: bold; font-size:18px;">${rankText}</td>
         <td class="student-cell-with-avatar">
           ${getAvatarHtml(item.nickname)}
-          <span class="student-nickname">${escapeHtml(item.nickname)}</span>
+          <span class="student-nickname">${escapeHtml(item.nickname)} ${reBadgeHtml}</span>
         </td>
         <td style="text-align: center;">${s1}</td>
         <td style="text-align: center;">${s2}</td>
@@ -808,6 +908,235 @@ async function submitAnswersForm() {
   }
 }
 
+// --- CLIENT RE-EXAM ROOM FUNCTIONS ---
+
+// Load Re-exam room content
+async function loadReExamRoom() {
+  showLoading("กำลังโหลดห้องสอบซ่อม...");
+  const res = await apiCall("getExamStatus", { username: currentUser.username });
+  hideLoading();
+  
+  if (!res.success) {
+    alert("ไม่สามารถโหลดข้อมูลห้องสอบซ่อมได้: " + res.message);
+    return;
+  }
+  
+  const pendingSets = res.pending_re_exams || [];
+  const listContainer = document.getElementById("re-exam-set-list");
+  listContainer.innerHTML = "";
+  
+  const flowContainer = document.getElementById("re-exam-questions-flow");
+  const submitArea = document.getElementById("re-exam-submit-area");
+  
+  // Clear displays
+  flowContainer.innerHTML = "";
+  submitArea.classList.add("hidden");
+  document.getElementById("re-exam-title-display").innerText = "กรุณาเลือกชุดข้อสอบซ่อมทางด้านซ้าย";
+  
+  if (pendingSets.length === 0) {
+    listContainer.innerHTML = `<div style="color:var(--text-secondary); text-align:center; font-size:13px; padding:15px;">คุณไม่มีข้อสอบซ่อมค้างอยู่ในขณะนี้! 🎉</div>`;
+    return;
+  }
+  
+  pendingSets.forEach(setId => {
+    const btn = document.createElement("button");
+    btn.className = "btn-re-exam-set";
+    btn.innerHTML = `<span>ข้อสอบชุดที่ ${setId}</span> <i data-lucide="chevron-right" class="icon-xxs"></i>`;
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".btn-re-exam-set").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      startReExam(parseInt(setId));
+    });
+    listContainer.appendChild(btn);
+  });
+  
+  refreshIcons();
+}
+
+// Check Client Re-exam Answer helper
+function checkClientReExamAnswer(setId, qIdx, value) {
+  const userAns = value ? value.toString().trim() : "";
+  // Special Q6 check for Sets 1 and 2
+  if ((setId === 1 || setId === 2) && qIdx === 5) {
+    return userAns === "1/2" || userAns === "0.5";
+  }
+  
+  const qConfig = RE_EXAM_QUESTIONS[setId];
+  if (!qConfig || qIdx >= qConfig.length) return false;
+  return qConfig[qIdx].answer.map(a => a.toString().trim()).includes(userAns);
+}
+
+// Start active re-exam set
+function startReExam(setId) {
+  currentReExamSetId = setId;
+  reExamStudentAnswers = Array(10).fill("");
+  
+  const titleDisplay = document.getElementById("re-exam-title-display");
+  titleDisplay.innerText = `ทำข้อสอบซ่อม: ข้อสอบชุดที่ ${setId}`;
+  
+  const flowContainer = document.getElementById("re-exam-questions-flow");
+  flowContainer.innerHTML = "";
+  
+  const submitArea = document.getElementById("re-exam-submit-area");
+  submitArea.classList.add("hidden");
+  
+  const questions = RE_EXAM_QUESTIONS[setId] || [];
+  
+  questions.forEach((q, idx) => {
+    const qRow = document.createElement("div");
+    qRow.className = `re-exam-q-row locked`;
+    qRow.id = `re-exam-q-row-${idx}`;
+    
+    qRow.innerHTML = `
+      <div class="re-exam-q-text">${q.q}</div>
+      <div class="re-exam-input-container">
+        <input type="text" class="re-exam-input" id="re-exam-ans-${idx}" placeholder="พิมพ์ตัวเลขคำตอบที่นี่" disabled>
+        <button class="btn btn-primary" id="btn-check-re-q-${idx}" disabled style="border-radius:10px; padding:10px 16px; font-weight:600; font-size:14px;">ตรวจ</button>
+        <span class="re-exam-status-icon" id="re-status-icon-${idx}"></span>
+      </div>
+    `;
+    
+    flowContainer.appendChild(qRow);
+    
+    // Add input event listeners (Enter key submit)
+    const input = qRow.querySelector(`.re-exam-input`);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        checkQuestionAnswer(idx);
+      }
+    });
+    
+    // Add check button event listener
+    const btn = qRow.querySelector(`button`);
+    btn.addEventListener("click", () => {
+      checkQuestionAnswer(idx);
+    });
+  });
+  
+  // Unlock first question
+  unlockReExamQuestion(0);
+}
+
+// Helper to unlock specific question
+function unlockReExamQuestion(idx) {
+  const row = document.getElementById(`re-exam-q-row-${idx}`);
+  if (!row) return;
+  
+  row.classList.remove("locked");
+  row.classList.add("active");
+  
+  const input = document.getElementById(`re-exam-ans-${idx}`);
+  const btn = document.getElementById(`btn-check-re-q-${idx}`);
+  
+  if (input) {
+    input.disabled = false;
+    input.focus();
+  }
+  if (btn) {
+    btn.disabled = false;
+  }
+}
+
+// Helper to check answer for specific question
+function checkQuestionAnswer(idx) {
+  const input = document.getElementById(`re-exam-ans-${idx}`);
+  const btn = document.getElementById(`btn-check-re-q-${idx}`);
+  const statusIcon = document.getElementById(`re-status-icon-${idx}`);
+  const row = document.getElementById(`re-exam-q-row-${idx}`);
+  
+  const value = input.value.trim();
+  
+  if (!value) {
+    alert("กรุณากรอกคำตอบ");
+    input.focus();
+    return;
+  }
+  
+  const isCorrect = checkClientReExamAnswer(currentReExamSetId, idx, value);
+  
+  if (isCorrect) {
+    // Green styling and lock
+    input.classList.remove("is-invalid");
+    input.classList.add("is-valid");
+    input.disabled = true;
+    if (btn) btn.disabled = true;
+    
+    statusIcon.className = "re-exam-status-icon check";
+    statusIcon.innerHTML = `<i data-lucide="check" class="icon-sm"></i>`;
+    
+    row.classList.remove("active", "incorrect");
+    row.classList.add("correct");
+    
+    reExamStudentAnswers[idx] = value;
+    
+    // Refresh checkmark icon
+    refreshIcons();
+    
+    // Unlock next question or show submit button
+    if (idx < 9) {
+      unlockReExamQuestion(idx + 1);
+    } else {
+      // Show submit button area
+      const submitArea = document.getElementById("re-exam-submit-area");
+      submitArea.classList.remove("hidden");
+      document.getElementById("btn-submit-re-exam").focus();
+    }
+  } else {
+    // Red styling & shake animation
+    input.classList.add("is-invalid");
+    statusIcon.className = "re-exam-status-icon cross";
+    statusIcon.innerHTML = `<i data-lucide="x" class="icon-sm"></i>`;
+    row.classList.add("incorrect");
+    
+    // Shake row
+    row.classList.add("shake");
+    setTimeout(() => {
+      row.classList.remove("shake");
+    }, 400);
+    
+    refreshIcons();
+    input.focus();
+    input.select();
+  }
+}
+
+// Submit Re-exam results
+async function submitReExamAnswers() {
+  if (reExamStudentAnswers.includes("")) {
+    alert("กรุณาตอบคำถามให้ถูกต้องครบทุกข้อก่อนส่ง");
+    return;
+  }
+  
+  const confirmSubmit = confirm("คุณได้ตอบคำถามถูกต้องครบถ้วนแล้ว ต้องการส่งกระดาษคำตอบซ่อมเพื่อล้างสถานะหรือไม่?");
+  if (!confirmSubmit) return;
+  
+  const spinner = document.getElementById("re-exam-submit-spinner");
+  spinner.classList.remove("hidden");
+  document.getElementById("btn-submit-re-exam").disabled = true;
+  
+  showLoading("กำลังบันทึกคะแนนสอบซ่อม...");
+  const res = await apiCall("submitExam", {
+    username: currentUser.username,
+    nickname: currentUser.nickname,
+    set_id: currentReExamSetId,
+    answers: reExamStudentAnswers,
+    is_re_exam: true
+  });
+  hideLoading();
+  
+  spinner.classList.add("hidden");
+  document.getElementById("btn-submit-re-exam").disabled = false;
+  
+  if (res.success && res.data.passed) {
+    alert("ยินดีด้วย! คุณสอบซ่อมชุดที่ " + currentReExamSetId + " ผ่านเรียบร้อยแล้วและระบบได้ทำการเคลียร์สถานะติดซ่อมแล้ว!");
+    showSection("portal-section");
+    loadPortal();
+  } else {
+    alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + (res.message || "คะแนนสอบซ่อมไม่ตรงตามเกณฑ์"));
+  }
+}
+
 // --- TEACHER ADMIN LOGIC ---
 
 // Open Teacher Panel (Prompt password if needed)
@@ -893,6 +1222,49 @@ async function fetchAdminAllData() {
   }
 }
 
+// Helper to calculate dynamic re-exam status of a student for a set
+function getStudentSetReExamStatus(username, setId) {
+  if (!adminAllData) return "none";
+  
+  // Find exam config to get passing score
+  const exam = adminAllData.exams.find(e => e.set_id.toString() === setId.toString());
+  const threshold = exam && exam.passing_score !== undefined ? parseInt(exam.passing_score) : 15;
+  
+  // Find highest score of this student for this set
+  let highestScore = -1;
+  if (adminAllData.submissions) {
+    adminAllData.submissions.forEach(sub => {
+      if (sub.username.toLowerCase() === username.toLowerCase() && sub.set_id.toString() === setId.toString()) {
+        const score = parseInt(sub.score) || 0;
+        if (score > highestScore) highestScore = score;
+      }
+    });
+  }
+  
+  // Find explicit re_exam entry
+  const rx = adminAllData.re_exams ? adminAllData.re_exams.find(r => r.username.toLowerCase() === username.toLowerCase() && r.set_id.toString() === setId.toString()) : null;
+  
+  if (rx) {
+    if (rx.status === "pending") {
+      return "pending";
+    } else if (rx.status === "passed") {
+      return "passed";
+    } else if (rx.status === "none") {
+      return "none";
+    }
+  }
+  
+  if (highestScore !== -1) {
+    if (highestScore < threshold) {
+      return "pending"; // Auto-pending because score is under threshold
+    } else {
+      return "passed"; // Auto-passed because score is above threshold
+    }
+  }
+  
+  return "none";
+}
+
 // Render everything on Teacher Dashboard
 function renderAdminDashboard() {
   if (!adminAllData) return;
@@ -902,13 +1274,78 @@ function renderAdminDashboard() {
   usersTbody.innerHTML = "";
   adminAllData.users.forEach(u => {
     const tr = document.createElement("tr");
+    
+    let reExamCol = "";
+    if (u.role === "student") {
+      reExamCol = `<div class="teacher-re-exam-status-group">`;
+      for (let s = 1; s <= 5; s++) {
+        const status = getStudentSetReExamStatus(u.username, s);
+        let badgeClass = "none";
+        let badgeIcon = "⚪";
+        let tooltip = "ไม่มีประวัติการสอบ";
+        
+        if (status === "pending") {
+          badgeClass = "pending";
+          badgeIcon = "🔴";
+          tooltip = "ต้องสอบซ่อม (Pending)";
+        } else if (status === "passed") {
+          badgeClass = "passed";
+          badgeIcon = "🟢";
+          tooltip = "สอบซ่อมผ่านหรือผ่านเกณฑ์แล้ว (Passed)";
+        }
+        
+        reExamCol += `<span class="teacher-re-exam-badge ${badgeClass}" title="${tooltip}" onclick="manageStudentReExam('${u.username}', '${u.nickname}', ${s}, '${status}')">${s}${badgeIcon}</span>`;
+      }
+      reExamCol += `</div>`;
+    } else {
+      reExamCol = `<span style="color:var(--text-secondary); font-size:12px;">คุณครู (แอดมิน)</span>`;
+    }
+    
     tr.innerHTML = `
       <td>${escapeHtml(u.username)}</td>
       <td>${escapeHtml(u.nickname)}</td>
       <td><span class="user-badge" style="background:rgba(255,255,255,0.05); color:var(--text-primary); border:none;">${u.role}</span></td>
+      <td style="text-align: center;">${reExamCol}</td>
     `;
     usersTbody.appendChild(tr);
   });
+
+  // Global helper for managing student re-exams via the badges
+  window.manageStudentReExam = async function(username, nickname, setId, currentStatus) {
+    const promptMsg = `จัดการสถานะสอบซ่อมของนักเรียน: ${nickname} (${username})\nข้อสอบชุดที่ ${setId}\nสถานะปัจจุบัน: ${currentStatus}\n\nกรุณาเลือกปุ่มการทำงาน:\n1 - สั่งให้สอบซ่อม (Pending)\n2 - ทำเครื่องหมายว่าผ่านแล้ว (Passed)\n3 - ยกเลิก/ล้างสถานะ (None)\n\n(พิมพ์ตัวเลข 1, 2, 3 หรือกดยกเลิก)`;
+    
+    const choice = prompt(promptMsg);
+    if (choice === null) return;
+    
+    let newStatus = "";
+    if (choice === "1") {
+      newStatus = "pending";
+    } else if (choice === "2") {
+      newStatus = "passed";
+    } else if (choice === "3") {
+      newStatus = "none";
+    } else {
+      alert("ตัวเลือกไม่ถูกต้อง");
+      return;
+    }
+    
+    showLoading("กำลังอัปเดตสถานะสอบซ่อม...");
+    const res = await apiCall("toggleReExamStatus", {
+      username: currentUser.username,
+      password: currentUser.password,
+      target_username: username,
+      set_id: setId,
+      status: newStatus
+    });
+    hideLoading();
+    
+    if (res.success) {
+      alert(res.message);
+      fetchAdminAllData();
+    } else {
+      alert("ล้มเหลว: " + res.message);
+    }
+  };
   
   // Render submissions table
   renderAdminSubmissionsList();
@@ -935,6 +1372,7 @@ function loadAdminSetSettings() {
   document.getElementById("admin-set-config-title").innerText = `ตั้งค่า: ข้อสอบชุดที่ ${adminSelectedSet}`;
   document.getElementById("admin-exam-status").value = exam.status;
   document.getElementById("admin-exam-release-answers").value = exam.release_answers.toString();
+  document.getElementById("admin-exam-passing-score").value = exam.passing_score !== undefined ? exam.passing_score : 15;
   
   // Start / End time formats conversion
   // Sheets return ISO or formatted datetime, we need "yyyy-MM-ddThh:mm" format for input
@@ -1003,6 +1441,7 @@ async function saveAdminExamSettings(e) {
   const releaseAnswers = document.getElementById("admin-exam-release-answers").value;
   const startTime = document.getElementById("admin-exam-start-time").value;
   const endTime = document.getElementById("admin-exam-end-time").value;
+  const passingScore = document.getElementById("admin-exam-passing-score").value;
   const spinner = document.getElementById("save-settings-spinner");
   const msgDiv = document.getElementById("admin-save-message");
   
@@ -1026,7 +1465,8 @@ async function saveAdminExamSettings(e) {
     start_time: startTime,
     end_time: endTime,
     answers: answersCsv,
-    release_answers: releaseAnswers
+    release_answers: releaseAnswers,
+    passing_score: passingScore
   });
   
   spinner.classList.add("hidden");
@@ -1131,10 +1571,18 @@ function handleOfflineApi(action, data) {
     localStorage.setItem("mock_exams", JSON.stringify(OFFLINE_MODE.exams));
     localStorage.setItem("mock_submissions", JSON.stringify(OFFLINE_MODE.submissions));
   }
+  if (!localStorage.getItem("mock_re_exams")) {
+    localStorage.setItem("mock_re_exams", JSON.stringify([]));
+  }
+  if (!localStorage.getItem("mock_re_submissions")) {
+    localStorage.setItem("mock_re_submissions", JSON.stringify([]));
+  }
   
   const dbUsers = JSON.parse(localStorage.getItem("mock_users"));
   const dbExams = JSON.parse(localStorage.getItem("mock_exams"));
   const dbSubmissions = JSON.parse(localStorage.getItem("mock_submissions"));
+  const dbReExams = JSON.parse(localStorage.getItem("mock_re_exams"));
+  const dbReSubmissions = JSON.parse(localStorage.getItem("mock_re_submissions"));
   
   if (action === "login") {
     const found = dbUsers.find(u => u.username.toLowerCase() === data.username.toLowerCase());
@@ -1157,7 +1605,6 @@ function handleOfflineApi(action, data) {
     return { success: true, message: "ลงทะเบียนบัญชีใหม่สำเร็จ (เดโมโหมด)" };
     
   } else if (action === "getExamStatus") {
-    // Return exam status stripped answers
     const clean = dbExams.map(ex => {
       let status = ex.status;
       if (status === "scheduled") {
@@ -1173,12 +1620,85 @@ function handleOfflineApi(action, data) {
         status: status,
         start_time: ex.start_time,
         end_time: ex.end_time,
-        release_answers: ex.release_answers === "true" || ex.release_answers === true
+        release_answers: ex.release_answers === "true" || ex.release_answers === true,
+        passing_score: ex.passing_score !== undefined ? parseInt(ex.passing_score) : 15
       };
     });
-    return { success: true, data: clean };
+    
+    const pendingReExams = [];
+    if (data.username) {
+      const targetU = data.username.toString().trim().toLowerCase();
+      dbReExams.forEach(rx => {
+        if (rx.username.toString().trim().toLowerCase() === targetU && rx.status === "pending") {
+          pendingReExams.push(rx.set_id.toString());
+        }
+      });
+    }
+    return { success: true, data: clean, pending_re_exams: pendingReExams };
     
   } else if (action === "submitExam") {
+    const isRe = data.is_re_exam === true || data.is_re_exam === "true";
+    
+    if (isRe) {
+      // Re-exam grading
+      const setId = data.set_id.toString();
+      const userAnswers = data.answers;
+      let score = 0;
+      
+      const correctList = RE_EXAM_QUESTIONS[setId];
+      for (let j = 0; j < 10; j++) {
+        const uAns = userAnswers[j] ? userAnswers[j].toString().trim() : "";
+        const cAnsList = correctList[j].answer;
+        if ((setId === "1" || setId === "2") && j === 5) {
+          if (uAns === "1/2" || uAns === "0.5") {
+            score++;
+          }
+        } else {
+          if (cAnsList.map(a => a.toString().trim()).includes(uAns)) {
+            score++;
+          }
+        }
+      }
+      
+      const passed = (score === 10);
+      const newSub = {
+        id: "SUB_MOCK_RE_" + Date.now(),
+        username: data.username,
+        nickname: data.nickname,
+        set_id: data.set_id,
+        answers: data.answers.join(","),
+        score: score,
+        submitted_at: new Date().toISOString()
+      };
+      
+      dbReSubmissions.push(newSub);
+      localStorage.setItem("mock_re_submissions", JSON.stringify(dbReSubmissions));
+      
+      if (passed) {
+        const targetU = data.username.toLowerCase();
+        const rxIdx = dbReExams.findIndex(rx => rx.username.toLowerCase() === targetU && rx.set_id.toString() === setId);
+        if (rxIdx !== -1) {
+          dbReExams[rxIdx].status = "passed";
+          dbReExams[rxIdx].assigned_at = newSub.submitted_at;
+        } else {
+          dbReExams.push({ username: data.username, nickname: data.nickname, set_id: data.set_id, status: "passed", assigned_at: newSub.submitted_at });
+        }
+        localStorage.setItem("mock_re_exams", JSON.stringify(dbReExams));
+      }
+      
+      return {
+        success: true,
+        data: {
+          submission_id: newSub.id,
+          score: score,
+          total: 10,
+          passed: passed,
+          submitted_at: newSub.submitted_at
+        }
+      };
+    }
+    
+    // Normal exam grading
     const exam = dbExams.find(ex => ex.set_id.toString() === data.set_id.toString());
     if (!exam) return { success: false, message: "ไม่พบข้อสอบชุดนี้" };
     
@@ -1205,6 +1725,26 @@ function handleOfflineApi(action, data) {
     dbSubmissions.push(newSub);
     localStorage.setItem("mock_submissions", JSON.stringify(dbSubmissions));
     
+    // Auto-flag re-exam if score < passing_score
+    const passingScore = exam.passing_score !== undefined && exam.passing_score !== "" ? parseInt(exam.passing_score) : 15;
+    const targetU = data.username.toLowerCase();
+    const rxIdx = dbReExams.findIndex(rx => rx.username.toLowerCase() === targetU && rx.set_id.toString() === data.set_id.toString());
+    
+    if (score < passingScore) {
+      if (rxIdx !== -1) {
+        dbReExams[rxIdx].status = "pending";
+        dbReExams[rxIdx].assigned_at = newSub.submitted_at;
+      } else {
+        dbReExams.push({ username: data.username, nickname: data.nickname, set_id: data.set_id, status: "pending", assigned_at: newSub.submitted_at });
+      }
+    } else {
+      if (rxIdx !== -1) {
+        dbReExams[rxIdx].status = "passed";
+        dbReExams[rxIdx].assigned_at = newSub.submitted_at;
+      }
+    }
+    localStorage.setItem("mock_re_exams", JSON.stringify(dbReExams));
+    
     return {
       success: true,
       data: {
@@ -1219,23 +1759,38 @@ function handleOfflineApi(action, data) {
     
   } else if (action === "getLeaderboard") {
     const studentScores = {};
+    
     dbSubmissions.forEach(sub => {
+      if (!sub.username) return;
+      const u = sub.username.toLowerCase();
       const nick = sub.nickname.trim();
       const set = sub.set_id.toString();
       const score = parseInt(sub.score) || 0;
       
-      if (!studentScores[nick]) {
-        studentScores[nick] = { nickname: nick, sets: {}, totalScore: 0 };
+      if (!studentScores[u]) {
+        studentScores[u] = { nickname: nick, sets: {}, totalScore: 0, pending_re_exams: [] };
       }
       
-      if (studentScores[nick].sets[set] === undefined || score > studentScores[nick].sets[set]) {
-        studentScores[nick].sets[set] = score;
+      if (studentScores[u].sets[set] === undefined || score > studentScores[u].sets[set]) {
+        studentScores[u].sets[set] = score;
+      }
+    });
+    
+    // Attach pending re-exams to leaderboard users
+    dbReExams.forEach(rx => {
+      if (rx.status === "pending") {
+        const u = rx.username.toLowerCase();
+        if (studentScores[u]) {
+          if (!studentScores[u].pending_re_exams.includes(rx.set_id.toString())) {
+            studentScores[u].pending_re_exams.push(rx.set_id.toString());
+          }
+        }
       }
     });
     
     const leaderboardList = [];
-    for (let nick in studentScores) {
-      const record = studentScores[nick];
+    for (let u in studentScores) {
+      const record = studentScores[u];
       let total = 0;
       for (let set in record.sets) {
         total += record.sets[set];
@@ -1248,7 +1803,6 @@ function handleOfflineApi(action, data) {
     return { success: true, data: leaderboardList };
     
   } else if (action === "getAdminData") {
-    // Check admin
     if (data.username !== "admin" || data.password !== "admin1234") {
       return { success: false, message: "สิทธิ์แอดมินโหมดเดโมไม่ถูกต้อง" };
     }
@@ -1258,7 +1812,8 @@ function handleOfflineApi(action, data) {
       data: {
         users: dbUsers.map(u => ({ username: u.username, nickname: u.nickname, role: u.role })),
         exams: dbExams,
-        submissions: dbSubmissions
+        submissions: dbSubmissions,
+        re_exams: dbReExams
       }
     };
     
@@ -1274,6 +1829,7 @@ function handleOfflineApi(action, data) {
     dbExams[examIdx].start_time = data.start_time;
     dbExams[examIdx].end_time = data.end_time;
     dbExams[examIdx].release_answers = data.release_answers;
+    dbExams[examIdx].passing_score = data.passing_score !== undefined && data.passing_score !== "" ? parseInt(data.passing_score) : 15;
     
     if (data.answers) {
       dbExams[examIdx].answers = data.answers;
@@ -1281,6 +1837,38 @@ function handleOfflineApi(action, data) {
     
     localStorage.setItem("mock_exams", JSON.stringify(dbExams));
     return { success: true, message: "อัปเดตข้อมูลสำเร็จในตัวจำลองเดโม" };
+    
+  } else if (action === "toggleReExamStatus") {
+    if (data.username !== "admin" || data.password !== "admin1234") {
+      return { success: false, message: "ไม่มีสิทธิ์ในการเข้าถึง (เดโมโหมด)" };
+    }
+    
+    const targetU = data.target_username.toString().trim().toLowerCase();
+    const setId = data.set_id.toString();
+    const rxIdx = dbReExams.findIndex(rx => rx.username.toLowerCase() === targetU && rx.set_id.toString() === setId);
+    
+    if (data.status === "none") {
+      if (rxIdx !== -1) {
+        dbReExams.splice(rxIdx, 1);
+      }
+    } else {
+      if (rxIdx !== -1) {
+        dbReExams[rxIdx].status = data.status;
+        dbReExams[rxIdx].assigned_at = new Date().toISOString();
+      } else {
+        const foundUser = dbUsers.find(u => u.username.toLowerCase() === targetU);
+        const nickname = foundUser ? foundUser.nickname : targetU;
+        dbReExams.push({
+          username: data.target_username,
+          nickname: nickname,
+          set_id: data.set_id,
+          status: data.status,
+          assigned_at: new Date().toISOString()
+        });
+      }
+    }
+    localStorage.setItem("mock_re_exams", JSON.stringify(dbReExams));
+    return { success: true, message: "อัปเดตสถานะสอบซ่อมสำเร็จในตัวจำลองเดโม" };
   }
   
   return { success: false, message: "Action not handled in offline mode" };
