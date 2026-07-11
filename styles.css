@@ -2023,21 +2023,28 @@ p {
 
 .re-exam-fraction-wrapper {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  width: 80px;
 }
 
 .re-exam-fraction-wrapper .re-exam-input {
-  max-width: 70px;
+  max-width: 80px;
+  width: 100%;
   text-align: center;
   flex: none;
+  padding: 8px 10px;
+  font-size: 15px;
 }
 
 .re-exam-fraction-divider {
-  font-size: 20px;
-  font-weight: bold;
-  color: var(--text-secondary);
-  margin: 0 4px;
+  width: 100%;
+  height: 2px;
+  background-color: var(--text-secondary);
+  border-radius: 2px;
+  margin: 2px 0;
+  display: block;
 }
 
 .re-exam-input {
