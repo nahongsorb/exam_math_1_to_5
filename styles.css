@@ -1447,3 +1447,46 @@ h1, h2, h3, h4, h5, h6 {
   gap: 8px;
 }
 
+/* MOBILE VIEW OPTIMIZATIONS */
+@media (max-width: 640px) {
+  .header-nav .btn-label {
+    display: none; /* Hide button text labels on mobile header */
+  }
+  
+  .header-nav .btn {
+    padding: 8px; /* Square padding for icon-only buttons */
+  }
+  
+  /* Hide PDF zoom controls on small screens, as mobile users can pinch-to-zoom */
+  .pdf-controls #btn-zoom-in,
+  .pdf-controls #btn-zoom-out,
+  .pdf-controls #zoom-indicator,
+  .pdf-controls .divider {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-body {
+    padding: 15px 10px; /* Reduce padding to maximize workspace size on mobile */
+  }
+  
+  .app-header {
+    padding: 10px 0;
+  }
+  
+  .header-container {
+    padding: 0 10px;
+  }
+  
+  /* Adjust workspace pane heights for small mobile screens */
+  .pdf-pane {
+    height: 480px !important;
+  }
+  
+  .answer-pane {
+    height: 420px !important;
+  }
+}
+
+
