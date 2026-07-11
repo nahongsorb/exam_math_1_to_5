@@ -275,6 +275,9 @@ async function handleLogin(e) {
   
   if (res.success) {
     currentUser = res.data;
+    if (currentUser.role === "teacher") {
+      currentUser.password = pass;
+    }
     localStorage.setItem("exam_user", JSON.stringify(currentUser));
     document.getElementById("user-nickname-display").innerText = currentUser.nickname;
     document.getElementById("user-info-area").classList.remove("hidden");
@@ -716,6 +719,7 @@ async function handleAdminAuth() {
   if (res.success) {
     // Temp upgrade user role locally or just save state
     currentUser = { username: user, password: pass, nickname: "คุณครู (ชั่วคราว)", role: "teacher" };
+    localStorage.setItem("exam_user", JSON.stringify(currentUser));
     document.getElementById("user-nickname-display").innerText = "คุณครู (แอดมิน)";
     document.getElementById("user-info-area").classList.remove("hidden");
     document.getElementById("btn-logout").classList.remove("hidden");
@@ -734,6 +738,16 @@ async function handleAdminAuth() {
 // Fetch all database records for admin
 async function fetchAdminAllData() {
   if (!currentUser || currentUser.role !== "teacher") return;
+  
+  if (!currentUser.password) {
+    // If no password stored, prompt for authentication
+    document.getElementById("admin-auth-panel").classList.remove("hidden");
+    document.getElementById("admin-dashboard-panel").classList.add("hidden");
+    document.getElementById("admin-username").value = currentUser.username;
+    document.getElementById("admin-password").value = "";
+    document.getElementById("admin-auth-message").innerText = "กรุณากรอกรหัสผ่านคุณครูอีกครั้งเพื่อความปลอดภัย";
+    return;
+  }
   
   showLoading("กำลังโหลดข้อมูลบริหารจัดการระบบ...");
   const res = await apiCall("getAdminData", {
