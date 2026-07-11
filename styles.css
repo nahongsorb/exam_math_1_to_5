@@ -2021,6 +2021,25 @@ p {
   max-width: 450px;
 }
 
+.re-exam-fraction-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.re-exam-fraction-wrapper .re-exam-input {
+  max-width: 70px;
+  text-align: center;
+  flex: none;
+}
+
+.re-exam-fraction-divider {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--text-secondary);
+  margin: 0 4px;
+}
+
 .re-exam-input {
   flex: 1;
   padding: 10px 14px;

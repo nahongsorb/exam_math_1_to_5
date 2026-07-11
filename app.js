@@ -24,16 +24,16 @@ const RE_EXAM_QUESTIONS = {
     { q: "10. สินค้าราคาป้าย 500 บาท ลดราคา 20% จงหาราคาหลังหักส่วนลด (บาท)", answer: ["400"] }
   ],
   2: [
-    { q: "1. จงหาค่า 50 - 4 × 8 + 6", answer: ["24"] },
-    { q: "2. ถ้า 2/5 ของจำนวนหนึ่งเท่ากับ 20 จงหาจำนวนเดิม", answer: ["50"] },
-    { q: "3. จงหา ค.ร.น. ของ 12 และ 18", answer: ["36"] },
-    { q: "4. วงกลมมีรัศมี 7 เซนติเมตร จงหาพื้นที่ (ตารางเซนติเมตร) (กำหนดค่า pi = 22/7)", answer: ["154"] },
-    { q: "5. จงหาค่าเฉลี่ยของจำนวน 15, 20, 25 และ 30", answer: ["22.5"] },
-    { q: "6. สุ่มหยิบการ์ด 1 ใบจากกล่องที่มีหมายเลข 1 ถึง 10 จงหาความน่าจะเป็นที่จะได้เลขคู่ (ระบุเป็นเศษส่วนอย่างต่ำ เช่น 1/2 หรือทศนิยม เช่น 0.5)", answer: ["1/2", "0.5"] },
-    { q: "7. ถ้า 4x - 7 = 25 จงหาค่า x", answer: ["8"] },
-    { q: "8. รูปสามเหลี่ยมมีฐานยาว 10 เซนติเมตร และสูง 12 เซนติเมตร จงหาพื้นที่ (ตารางเซนติเมตร)", answer: ["60"] },
-    { q: "9. ลูกบาศก์มีด้านยาวด้านละ 5 เซนติเมตร จงหาปริมาตร (ลูกบาศก์เซนติเมตร)", answer: ["125"] },
-    { q: "10. ฝากเงิน 1,000 บาท ได้อัตราดอกเบี้ย 5% ต่อปี เมื่อครบปีจะได้รับเงินรวมทั้งหมดกี่บาท", answer: ["1050"] }
+    { q: "1. จงหาค่าของ 48 ÷ 6 + 7 × 5", answer: ["43"] },
+    { q: "2. ร้านค้าลดราคาสินค้า 20% จากราคา 750 บาท หลังจากลดราคาแล้ว สินค้าราคากี่บาท", answer: ["600"] },
+    { q: "3. แม่มีส้ม 96 ผล ต้องการแบ่งใส่ถุงให้แต่ละถุงมีจำนวนเท่ากัน และไม่เหลือส้มเลย ถ้าแต่ละถุงมี 12 ผล จะได้ทั้งหมดกี่ถุง", answer: ["8"] },
+    { q: "4. จงหาค่า 3/4 + 5/8 (ระบุเป็นเศษส่วนอย่างต่ำ เช่น 11/8)", answer: ["11/8", "1 3/8", "1.375"] },
+    { q: "5. สี่เหลี่ยมผืนผ้ากว้าง 8 เซนติเมตร ยาว 15 เซนติเมตร มีพื้นที่กี่ตารางเซนติเมตร", answer: ["120"] },
+    { q: "6. จำนวนหนึ่งเมื่อนำไปคูณด้วย 9 แล้วได้ผลลัพธ์เป็น 234 จำนวนเดิมคือเท่าใด", answer: ["26"] },
+    { q: "7. นักเรียนห้องหนึ่งมีนักเรียนทั้งหมด 40 คน เป็นผู้หญิง 18 คน ผู้ชายคิดเป็นกี่เปอร์เซ็นต์ของนักเรียนทั้งหมด (ระบุเฉพาะตัวเลขเปอร์เซ็นต์ เช่น 55)", answer: ["55"] },
+    { q: "8. จงหาจำนวนที่หายไป: 2, 5, 8, 11, ____, 17", answer: ["14"] },
+    { q: "9. จงหาค่า 7² - 3²", answer: ["40"] },
+    { q: "10. กล่องใบหนึ่งมีลูกบอลสีแดง 6 ลูก สีเขียว 4 ลูก และสีน้ำเงิน 5 ลูก ถ้าหยิบลูกบอลออกมา 1 ลูก โดยไม่มอง ความน่าจะเป็นที่จะได้ลูกบอลสีเขียว (ระบุเป็นเศษส่วนอย่างต่ำ เช่น 4/15)", answer: ["4/15"] }
   ],
   3: [
     { q: "1. จงหาค่าของ 100 - 9 × 9", answer: ["19"] },
@@ -956,9 +956,15 @@ async function loadReExamRoom() {
 // Check Client Re-exam Answer helper
 function checkClientReExamAnswer(setId, qIdx, value) {
   const userAns = value ? value.toString().trim() : "";
-  // Special Q6 check for Sets 1 and 2
-  if ((setId === 1 || setId === 2) && qIdx === 5) {
+  
+  // Special Q6 check for Set 1
+  if (setId === 1 && qIdx === 5) {
     return userAns === "1/2" || userAns === "0.5";
+  }
+  
+  // Special Q4 check for Set 2
+  if (setId === 2 && qIdx === 3) {
+    return userAns === "11/8" || userAns === "1.375" || userAns === "1 3/8";
   }
   
   const qConfig = RE_EXAM_QUESTIONS[setId];
@@ -987,24 +993,46 @@ function startReExam(setId) {
     qRow.className = `re-exam-q-row locked`;
     qRow.id = `re-exam-q-row-${idx}`;
     
-    qRow.innerHTML = `
-      <div class="re-exam-q-text">${q.q}</div>
-      <div class="re-exam-input-container">
+    // Check if the answer can be a fraction (contains /)
+    const isFraction = q.answer.some(ans => ans.includes("/"));
+    
+    let inputHtml = "";
+    if (isFraction) {
+      inputHtml = `
+        <div class="re-exam-fraction-wrapper">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="re-exam-input re-exam-num" id="re-exam-ans-${idx}-num" placeholder="เศษ" disabled>
+          <span class="re-exam-fraction-divider">/</span>
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="re-exam-input re-exam-den" id="re-exam-ans-${idx}-den" placeholder="ส่วน" disabled>
+        </div>
+        <button class="btn btn-primary" id="btn-check-re-q-${idx}" disabled style="border-radius:10px; padding:10px 16px; font-weight:600; font-size:14px;">ตรวจ</button>
+        <span class="re-exam-status-icon" id="re-status-icon-${idx}"></span>
+      `;
+    } else {
+      inputHtml = `
         <input type="text" class="re-exam-input" id="re-exam-ans-${idx}" placeholder="พิมพ์ตัวเลขคำตอบที่นี่" disabled>
         <button class="btn btn-primary" id="btn-check-re-q-${idx}" disabled style="border-radius:10px; padding:10px 16px; font-weight:600; font-size:14px;">ตรวจ</button>
         <span class="re-exam-status-icon" id="re-status-icon-${idx}"></span>
+      `;
+    }
+    
+    qRow.innerHTML = `
+      <div class="re-exam-q-text">${q.q}</div>
+      <div class="re-exam-input-container">
+        ${inputHtml}
       </div>
     `;
     
     flowContainer.appendChild(qRow);
     
     // Add input event listeners (Enter key submit)
-    const input = qRow.querySelector(`.re-exam-input`);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        checkQuestionAnswer(idx);
-      }
+    const inputs = qRow.querySelectorAll(`.re-exam-input`);
+    inputs.forEach(input => {
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          checkQuestionAnswer(idx);
+        }
+      });
     });
     
     // Add check button event listener
@@ -1027,11 +1055,18 @@ function unlockReExamQuestion(idx) {
   row.classList.add("active");
   
   const input = document.getElementById(`re-exam-ans-${idx}`);
+  const numInput = document.getElementById(`re-exam-ans-${idx}-num`);
+  const denInput = document.getElementById(`re-exam-ans-${idx}-den`);
   const btn = document.getElementById(`btn-check-re-q-${idx}`);
   
   if (input) {
     input.disabled = false;
     input.focus();
+  }
+  if (numInput && denInput) {
+    numInput.disabled = false;
+    denInput.disabled = false;
+    numInput.focus();
   }
   if (btn) {
     btn.disabled = false;
@@ -1041,25 +1076,51 @@ function unlockReExamQuestion(idx) {
 // Helper to check answer for specific question
 function checkQuestionAnswer(idx) {
   const input = document.getElementById(`re-exam-ans-${idx}`);
+  const numInput = document.getElementById(`re-exam-ans-${idx}-num`);
+  const denInput = document.getElementById(`re-exam-ans-${idx}-den`);
   const btn = document.getElementById(`btn-check-re-q-${idx}`);
   const statusIcon = document.getElementById(`re-status-icon-${idx}`);
   const row = document.getElementById(`re-exam-q-row-${idx}`);
   
-  const value = input.value.trim();
+  let value = "";
+  let isFraction = false;
   
-  if (!value) {
-    alert("กรุณากรอกคำตอบ");
-    input.focus();
-    return;
+  if (numInput && denInput) {
+    isFraction = true;
+    const num = numInput.value.trim();
+    const den = denInput.value.trim();
+    if (!num || !den) {
+      alert("กรุณากรอกเศษส่วนให้ครบถ้วน");
+      if (!num) numInput.focus();
+      else denInput.focus();
+      return;
+    }
+    value = num + "/" + den;
+  } else if (input) {
+    value = input.value.trim();
+    if (!value) {
+      alert("กรุณากรอกคำตอบ");
+      input.focus();
+      return;
+    }
   }
   
   const isCorrect = checkClientReExamAnswer(currentReExamSetId, idx, value);
   
   if (isCorrect) {
     // Green styling and lock
-    input.classList.remove("is-invalid");
-    input.classList.add("is-valid");
-    input.disabled = true;
+    if (isFraction) {
+      numInput.classList.remove("is-invalid");
+      numInput.classList.add("is-valid");
+      numInput.disabled = true;
+      denInput.classList.remove("is-invalid");
+      denInput.classList.add("is-valid");
+      denInput.disabled = true;
+    } else {
+      input.classList.remove("is-invalid");
+      input.classList.add("is-valid");
+      input.disabled = true;
+    }
     if (btn) btn.disabled = true;
     
     statusIcon.className = "re-exam-status-icon check";
@@ -1084,7 +1145,16 @@ function checkQuestionAnswer(idx) {
     }
   } else {
     // Red styling & shake animation
-    input.classList.add("is-invalid");
+    if (isFraction) {
+      numInput.classList.add("is-invalid");
+      denInput.classList.add("is-invalid");
+      numInput.focus();
+      numInput.select();
+    } else {
+      input.classList.add("is-invalid");
+      input.focus();
+      input.select();
+    }
     statusIcon.className = "re-exam-status-icon cross";
     statusIcon.innerHTML = `<i data-lucide="x" class="icon-sm"></i>`;
     row.classList.add("incorrect");
@@ -1096,8 +1166,6 @@ function checkQuestionAnswer(idx) {
     }, 400);
     
     refreshIcons();
-    input.focus();
-    input.select();
   }
 }
 
@@ -1649,8 +1717,12 @@ function handleOfflineApi(action, data) {
       for (let j = 0; j < 10; j++) {
         const uAns = userAnswers[j] ? userAnswers[j].toString().trim() : "";
         const cAnsList = correctList[j].answer;
-        if ((setId === "1" || setId === "2") && j === 5) {
+        if (setId === "1" && j === 5) {
           if (uAns === "1/2" || uAns === "0.5") {
+            score++;
+          }
+        } else if (setId === "2" && j === 3) {
+          if (uAns === "11/8" || uAns === "1.375" || uAns === "1 3/8") {
             score++;
           }
         } else {
