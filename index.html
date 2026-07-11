@@ -326,6 +326,7 @@
         <div class="admin-tabs">
           <button class="admin-tab active" data-tab="admin-tab-exams">ตั้งค่าเปิด-ปิดข้อสอบ & เฉลย</button>
           <button class="admin-tab" data-tab="admin-tab-submissions">ดูผลคะแนนการส่งสอบ</button>
+          <button class="admin-tab" data-tab="admin-tab-analysis">วิเคราะห์ข้อผิดพลาด</button>
           <button class="admin-tab" data-tab="admin-tab-students">รายชื่อนักเรียนในระบบ</button>
         </div>
 
@@ -438,6 +439,59 @@
               <tbody id="table-body-submissions">
                 <tr>
                   <td colspan="6" style="text-align:center; padding:20px;">ไม่พบข้อมูลการส่งข้อสอบ</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 4: WRONG ANSWERS ANALYSIS -->
+        <div id="admin-tab-analysis" class="admin-tab-content">
+          <div class="filter-bar flex-wrap" style="gap: 15px; display: flex; align-items: center; justify-content: space-between; padding: 15px; border-radius: 12px; margin-bottom: 20px; background: rgba(255, 255, 255, 0.02);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <label for="select-analysis-set" style="white-space: nowrap; font-weight: 600;">เลือกชุดข้อสอบ:</label>
+              <select id="select-analysis-set" class="form-control filter-select" style="min-width: 150px;">
+                <option value="1">ชุดที่ 1</option>
+                <option value="2">ชุดที่ 2</option>
+                <option value="3">ชุดที่ 3</option>
+                <option value="4">ชุดที่ 4</option>
+                <option value="5">ชุดที่ 5</option>
+              </select>
+            </div>
+            <span class="analysis-info-text" style="color: var(--text-secondary); font-size: 13px;">
+              💡 วิเคราะห์สถิติจำนวนคนทำผิดในแต่ละข้อ เพื่อวิเคราะห์หาหัวข้อวิชาที่นักเรียนส่วนใหญ่ยังทำคะแนนได้น้อย
+            </span>
+          </div>
+
+          <div class="analysis-summary-cards">
+            <div class="analysis-card glass-panel">
+              <div class="analysis-card-title">จำนวนผู้ส่งสอบทั้งหมด</div>
+              <div id="analysis-total-submissions" class="analysis-card-value color-secondary">0 คน</div>
+            </div>
+            <div class="analysis-card glass-panel">
+              <div class="analysis-card-title">คะแนนเฉลี่ยของห้อง</div>
+              <div id="analysis-avg-score" class="analysis-card-value color-success">0.00 / 30</div>
+            </div>
+            <div class="analysis-card glass-panel">
+              <div class="analysis-card-title">ข้อที่นักเรียนทำผิดมากที่สุด</div>
+              <div id="analysis-most-wrong-q" class="analysis-card-value color-danger">-</div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 80px; text-align: center;">ข้อที่</th>
+                  <th style="text-align: center; width: 180px;">อัตราการตอบผิด (%)</th>
+                  <th style="text-align: center; width: 150px;">จำนวนคนตอบผิด (คน)</th>
+                  <th style="text-align: center;">ตัวเลือกยอดนิยมที่เด็กตอบผิด</th>
+                  <th style="text-align: center; width: 150px; color: var(--success-color);">เฉลยที่ถูกต้อง</th>
+                </tr>
+              </thead>
+              <tbody id="table-body-analysis">
+                <tr>
+                  <td colspan="5" style="text-align:center; padding:30px; color:var(--text-secondary);">กำลังโหลดข้อมูลการวิเคราะห์...</td>
                 </tr>
               </tbody>
             </table>

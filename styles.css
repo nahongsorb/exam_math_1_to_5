@@ -1372,3 +1372,78 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 13px;
   }
 }
+
+/* WRONG ANSWERS ANALYSIS STYLES */
+.analysis-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.analysis-card {
+  padding: 20px;
+  text-align: center;
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.analysis-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.analysis-card-title {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.analysis-card-value {
+  font-size: 26px;
+  font-weight: bold;
+  font-family: 'Outfit', sans-serif;
+}
+
+.color-secondary {
+  color: var(--secondary-color);
+  text-shadow: 0 0 15px var(--secondary-glow);
+}
+
+.color-success {
+  color: var(--success-color);
+  text-shadow: 0 0 15px var(--success-glow);
+}
+
+.color-danger {
+  color: var(--danger-color);
+  text-shadow: 0 0 15px var(--danger-glow);
+}
+
+/* Rows styling depending on wrong rate */
+.data-table tbody tr.high-error {
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.data-table tbody tr.high-error:hover {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+}
+
+.data-table tbody tr.medium-error {
+  background-color: rgba(245, 158, 11, 0.04);
+}
+
+.data-table tbody tr.medium-error:hover {
+  background-color: rgba(245, 158, 11, 0.08) !important;
+}
+
+.wrong-rate-bar-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+

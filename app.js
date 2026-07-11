@@ -165,6 +165,10 @@ function setupEventListeners() {
       tab.classList.add("active");
       const targetId = tab.getAttribute("data-tab");
       document.getElementById(targetId).classList.add("active");
+      
+      if (targetId === "admin-tab-analysis") {
+        renderWrongAnswersAnalysis();
+      }
     });
   });
 
@@ -186,6 +190,7 @@ function setupEventListeners() {
   document.getElementById("select-filter-set").addEventListener("change", filterAdminSubmissions);
   document.getElementById("btn-refresh-submissions").addEventListener("click", fetchAdminAllData);
   document.getElementById("btn-export-submissions-csv").addEventListener("click", exportSubmissionsCSV);
+  document.getElementById("select-analysis-set").addEventListener("change", renderWrongAnswersAnalysis);
 
   // Admin login submission
   document.getElementById("btn-admin-auth-submit").addEventListener("click", handleAdminAuth);
@@ -786,6 +791,12 @@ function renderAdminDashboard() {
   
   // Load settings for the active admin selected set
   loadAdminSetSettings();
+  
+  // Render analysis if current tab is active
+  const activeTab = document.querySelector(".admin-tab.active");
+  if (activeTab && activeTab.getAttribute("data-tab") === "admin-tab-analysis") {
+    renderWrongAnswersAnalysis();
+  }
 }
 
 // Load configurations for Selected Set into admin form
@@ -1156,4 +1167,140 @@ function escapeHtml(text) {
     "'": '&#039;'
   };
   return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+// Render wrong answers analysis for the teacher
+function renderWrongAnswersAnalysis() {
+  if (!adminAllData) return;
+  
+  const selectedSet = document.getElementById("select-analysis-set").value;
+  const tbody = document.getElementById("table-body-analysis");
+  tbody.innerHTML = "";
+  
+  // 1. Get the exam config for the selected set to find correct answers
+  const exam = adminAllData.exams.find(e => e.set_id.toString() === selectedSet.toString());
+  if (!exam || !exam.answers) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;">ไม่พบข้อมูลเฉลยสำหรับข้อสอบชุดนี้</td></tr>`;
+    return;
+  }
+  const correctAnswers = exam.answers.split(",");
+  
+  // 2. Filter submissions for this set
+  const subs = adminAllData.submissions.filter(s => s.set_id.toString() === selectedSet.toString());
+  const totalSubmissions = subs.length;
+  
+  document.getElementById("analysis-total-submissions").innerText = `${totalSubmissions} คน`;
+  
+  if (totalSubmissions === 0) {
+    document.getElementById("analysis-avg-score").innerText = "0.00 / 30";
+    document.getElementById("analysis-most-wrong-q").innerText = "-";
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-secondary);">ยังไม่มีประวัติการส่งข้อสอบชุดนี้ในระบบ</td></tr>`;
+    return;
+  }
+  
+  // Calculate average score
+  let totalScore = 0;
+  subs.forEach(s => totalScore += (parseInt(s.score) || 0));
+  const avgScore = (totalScore / totalSubmissions).toFixed(2);
+  document.getElementById("analysis-avg-score").innerText = `${avgScore} / 30`;
+  
+  // 3. Initialize tally structures
+  const wrongCounts = Array(30).fill(0);
+  const choiceTallies = Array(30).fill(null).map(() => ({ "1": 0, "2": 0, "3": 0, "4": 0, "": 0 }));
+  
+  subs.forEach(sub => {
+    const studentAns = sub.answers.split(",");
+    for (let j = 0; j < 30; j++) {
+      const myAns = studentAns[j] !== undefined ? studentAns[j].toString().trim() : "";
+      const correctAns = correctAnswers[j] !== undefined ? correctAnswers[j].toString().trim() : "";
+      
+      // Tally student choice
+      if (myAns === "1" || myAns === "2" || myAns === "3" || myAns === "4") {
+        choiceTallies[j][myAns]++;
+      } else {
+        choiceTallies[j][""]++;
+      }
+      
+      // Check if correct
+      if (myAns !== correctAns) {
+        wrongCounts[j]++;
+      }
+    }
+  });
+  
+  // Find question with most wrong answers
+  let maxWrongVal = -1;
+  let mostWrongQs = [];
+  for (let j = 0; j < 30; j++) {
+    if (wrongCounts[j] > maxWrongVal) {
+      maxWrongVal = wrongCounts[j];
+      mostWrongQs = [j + 1];
+    } else if (wrongCounts[j] === maxWrongVal) {
+      mostWrongQs.push(j + 1);
+    }
+  }
+  
+  if (maxWrongVal > 0) {
+    document.getElementById("analysis-most-wrong-q").innerText = `ข้อ ${mostWrongQs.join(", ")} (${maxWrongVal} คน)`;
+  } else {
+    document.getElementById("analysis-most-wrong-q").innerText = "-";
+  }
+  
+  // 4. Render rows
+  for (let i = 0; i < 30; i++) {
+    const qNum = i + 1;
+    const wrongCount = wrongCounts[i];
+    const wrongRate = Math.round((wrongCount / totalSubmissions) * 100);
+    const correctAns = correctAnswers[i];
+    
+    // Find most common wrong choice
+    const tallies = choiceTallies[i];
+    let maxWrongChoice = "";
+    let maxWrongCount = 0;
+    
+    for (let choice = 1; choice <= 4; choice++) {
+      const choiceStr = choice.toString();
+      if (choiceStr !== correctAns && tallies[choiceStr] > maxWrongCount) {
+        maxWrongCount = tallies[choiceStr];
+        maxWrongChoice = choiceStr;
+      }
+    }
+    
+    if (tallies[""] > maxWrongCount) {
+      maxWrongCount = tallies[""];
+      maxWrongChoice = "ไม่ตอบ (ว่าง)";
+    }
+    
+    let wrongChoiceText = "-";
+    if (maxWrongCount > 0) {
+      wrongChoiceText = `ตัวเลือก ${maxWrongChoice} (${maxWrongCount} คน)`;
+    }
+    
+    // Style and indicator for high wrong rate
+    let severityClass = "";
+    if (wrongRate >= 70) {
+      severityClass = "high-error";
+    } else if (wrongRate >= 40) {
+      severityClass = "medium-error";
+    }
+    
+    const tr = document.createElement("tr");
+    if (severityClass) tr.className = severityClass;
+    
+    tr.innerHTML = `
+      <td style="text-align: center; font-weight: bold;">${qNum}</td>
+      <td style="text-align: center;">
+        <div class="wrong-rate-bar-container">
+          <div style="width: 60px; background: rgba(255,255,255,0.08); height: 8px; border-radius: 4px; overflow: hidden;">
+            <div style="width: ${wrongRate}%; background: ${severityClass === 'high-error' ? 'var(--danger-color)' : (severityClass === 'medium-error' ? 'var(--warning-color)' : 'var(--success-color)')}; height: 100%;"></div>
+          </div>
+          <span style="font-weight: 600; width: 35px; text-align: right;">${wrongRate}%</span>
+        </div>
+      </td>
+      <td style="text-align: center;">${wrongCount} / ${totalSubmissions}</td>
+      <td style="text-align: center; color: var(--text-secondary);">${wrongChoiceText}</td>
+      <td style="text-align: center; font-weight: bold; color: var(--success-color);">ตัวเลือก ${correctAns}</td>
+    `;
+    tbody.appendChild(tr);
+  }
 }
