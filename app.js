@@ -2051,21 +2051,29 @@ function populateAnalysisStudents() {
   select.value = [...select.options].some(option => option.value === previous) ? previous : "all";
 }
 
-function renderTopicAnalysis(exam, submissions, correctAnswers) {
+function renderTopicAnalysis(exams, submissions) {
   const tbody = document.getElementById("table-body-topic-analysis");
   if (!tbody) return;
   tbody.textContent = "";
-  const topics = getExamTopics(exam);
+  const examsById = new Map(exams.map(exam => [String(exam.set_id), exam]));
   const stats = {};
   submissions.forEach(submission => {
+    const exam = examsById.get(String(submission.set_id));
+    if (!exam || !exam.answers) return;
+    const topics = getExamTopics(exam);
+    const correctAnswers = String(exam.answers).split(",");
     const answers = String(submission.answers || "").split(",");
     for (let index = 0; index < 30; index++) {
       const topic = topics[index];
       if (!topic) continue;
+      const answer = String(answers[index] || "").trim();
+      // A blank answer is not evidence of weak understanding, so it is not
+      // included in the topic denominator.
+      if (!["1", "2", "3", "4"].includes(answer)) continue;
       if (!stats[topic]) stats[topic] = { attempts: 0, correct: 0, questions: new Set() };
       stats[topic].attempts++;
       stats[topic].questions.add(index + 1);
-      if (String(answers[index] || "").trim() === String(correctAnswers[index] || "").trim()) stats[topic].correct++;
+      if (answer === String(correctAnswers[index] || "").trim()) stats[topic].correct++;
     }
   });
 
@@ -2075,7 +2083,7 @@ function renderTopicAnalysis(exam, submissions, correctAnswers) {
     const row = tbody.insertRow();
     const cell = row.insertCell();
     cell.colSpan = 5;
-    cell.textContent = topics.some(Boolean) ? "ยังไม่มีคำตอบที่ใช้วิเคราะห์" : "ยังไม่ได้กำหนดหัวข้อของข้อสอบชุดนี้";
+    cell.textContent = "ยังไม่มีคำตอบที่ใช้วิเคราะห์ หรือยังไม่ได้กำหนดหัวข้อของข้อสอบ";
     cell.style.cssText = "text-align:center; padding:20px; color:var(--text-secondary);";
     return;
   }
@@ -2099,8 +2107,23 @@ function renderWrongAnswersAnalysis() {
   populateAnalysisStudents();
   
   const selectedSet = document.getElementById("select-analysis-set").value;
+  const selectedStudent = document.getElementById("select-analysis-student").value;
   const tbody = document.getElementById("table-body-analysis");
   tbody.innerHTML = "";
+
+  if (selectedSet === "all") {
+    const allSubs = adminAllData.submissions.filter(submission =>
+      selectedStudent === "all" || String(submission.username).toLowerCase() === selectedStudent.toLowerCase());
+    const studentCount = new Set(allSubs.map(submission => String(submission.username).toLowerCase())).size;
+    const totalScore = allSubs.reduce((total, submission) => total + (parseInt(submission.score) || 0), 0);
+    const avgScore = allSubs.length ? (totalScore / allSubs.length).toFixed(2) : "0.00";
+    renderTopicAnalysis(adminAllData.exams.filter(exam => exam.answers), allSubs);
+    document.getElementById("analysis-total-submissions").innerText = `${studentCount} คน / ${allSubs.length} ชุดที่ส่ง`;
+    document.getElementById("analysis-avg-score").innerText = `${avgScore} / 30`;
+    document.getElementById("analysis-most-wrong-q").innerText = "ดูจุดอ่อนตามหัวข้อด้านล่าง";
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-secondary);">โหมดรวมทุกชุดแสดงจุดอ่อนตามหัวข้อด้านบน โดยไม่นับชุดหรือข้อที่ยังไม่ได้ตอบ</td></tr>`;
+    return;
+  }
   
   // 1. Get the exam config for the selected set to find correct answers
   const exam = adminAllData.exams.find(e => e.set_id.toString() === selectedSet.toString());
@@ -2111,11 +2134,10 @@ function renderWrongAnswersAnalysis() {
   const correctAnswers = exam.answers.split(",");
   
   // 2. Filter submissions for this set
-  const selectedStudent = document.getElementById("select-analysis-student").value;
   const subs = adminAllData.submissions.filter(s => s.set_id.toString() === selectedSet.toString() &&
     (selectedStudent === "all" || String(s.username).toLowerCase() === selectedStudent.toLowerCase()));
   const totalSubmissions = subs.length;
-  renderTopicAnalysis(exam, subs, correctAnswers);
+  renderTopicAnalysis([exam], subs);
   
   document.getElementById("analysis-total-submissions").innerText = `${totalSubmissions} คน`;
   
