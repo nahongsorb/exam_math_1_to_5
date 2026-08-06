@@ -1802,24 +1802,28 @@ p {
 }
 
 @media (max-width: 768px) {
-  .header-nav-center {
-    position: static;
-    transform: none;
-  }
   .header-container {
-    flex-wrap: wrap;
-    gap: var(--space-16);
-  }
-  .header-nav-center {
-    order: 3;
-    width: 100%;
-    justify-content: center;
+    flex-wrap: nowrap;
+    gap: var(--space-8);
   }
   .logo {
     order: 1;
+    flex-shrink: 0;
+  }
+  .header-nav-center {
+    position: static;
+    transform: none;
+    order: 2;
+    margin-left: auto;
+    width: auto;
+    justify-content: flex-end;
+    gap: var(--space-8);
+    flex-shrink: 0;
   }
   .header-nav-right {
-    order: 2;
+    order: 3;
+    gap: var(--space-8);
+    flex-shrink: 0;
   }
   
   .app-body {
@@ -1842,7 +1846,17 @@ p {
   }
   .header-nav-center .btn,
   .header-nav-right .btn {
-    padding: var(--space-12);
+    padding: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
+  .logo-img {
+    height: 28px;
+  }
+  .user-badge {
+    padding: 6px 10px;
+    font-size: 12px;
   }
 }
 
