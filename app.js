@@ -77,6 +77,16 @@ const RE_EXAM_QUESTIONS = {
 let adminSelectedSet = 1;
 let adminAllData = null; // Stored admin data (users, exams, submissions)
 
+// Initial topic map derived from the 5 published exam sets. Teachers can
+// override any label in the admin settings; saved labels take precedence.
+const DEFAULT_EXAM_TOPICS = {
+  1: ["ทศนิยมและการคำนวณ", "เศษส่วน", "การดำเนินการกับจำนวน", "เศษส่วน", "พื้นที่รูปสามเหลี่ยม", "จำนวนเฉพาะ", "เศษส่วน", "อนุกรมและผลบวก", "ร้อยละ", "ร้อยละและส่วนลด", "ดอกเบี้ยร้อยละ", "พื้นที่รูปสี่เหลี่ยมจัตุรัส", "ปริมาตรทรงกระบอก", "ปริมาตรและการแปลงหน่วย", "ค่าเฉลี่ย", "พื้นที่และเรขาคณิต", "มุมและเรขาคณิต", "เศษส่วนและลำดับ", "ปริมาตร", "แผนภูมิวงกลมและร้อยละ", "การวัดและการนับ", "อัตราส่วน", "กำไรขาดทุนและร้อยละ", "พื้นที่รูปสามเหลี่ยมและสี่เหลี่ยม", "เศษส่วนจากรูป", "แบบรูปจำนวน", "ค.ร.น.", "แบบรูปภาพ", "แผนภูมิวงกลมและร้อยละ", "โจทย์ปัญหาอัตราค่าใช้จ่าย"],
+  2: ["เศษส่วนและทศนิยม", "การคำนวณทศนิยมและเศษส่วน", "การคำนวณทศนิยม", "มุมภายในรูปหลายเหลี่ยม", "จำนวนเฉพาะและการเรียงสับเปลี่ยน", "การหารมีเศษ", "ห.ร.ม.และการวัด", "ห.ร.ม.และค.ร.น.", "การหารและโจทย์ปัญหา", "ทศนิยมคูณ", "เส้นขนานและมุม", "มาตราส่วน", "เส้นขนานและมุม", "สมบัติรูปสี่เหลี่ยม", "การหารเอาเศษ", "แบบรูปจำนวน", "ร้อยละและส่วนลด", "ปริมาตร", "มาตราส่วนและเส้นรอบรูป", "ร้อยละกำไรขาดทุน", "ร้อยละกำไรขาดทุน", "อัตราส่วนและบัญญัติไตรยางศ์", "ร้อยละ", "ร้อยละกำไรขาดทุน", "ปริมาตร", "การคูณเลขโดด", "แบบรูปภาพ", "แผนภูมิรูปภาพและร้อยละ", "แผนภูมิวงกลม", "เวลาและเขตเวลา"],
+  3: ["ทศนิยม", "การเปรียบเทียบเศษส่วน", "การคูณเศษส่วน", "การแยกตัวประกอบ", "ทศนิยม", "อนุกรมและผลบวก", "ห.ร.ม.", "ตรรกะและจำนวน", "ค.ร.น.", "รูปเรขาคณิตสามมิติ", "เส้นขนานและมุม", "วงกลม", "แบบรูปจำนวน", "กำไรขาดทุนและร้อยละ", "สมการ", "ร้อยละ", "ปริมาตร", "รูปหลายเหลี่ยม", "การเรียงสับเปลี่ยน", "แบบรูปและลำดับ", "ร้อยละและเศษส่วน", "รูปคลี่สามมิติ", "เส้นขนานและมุม", "พื้นที่รูปสี่เหลี่ยมคางหมู", "ปริมาตรปริซึม", "เรขาคณิตและเส้นรอบรูป", "ค่าเฉลี่ย", "ทิศและมุม", "ค่าเฉลี่ย", "ความน่าจะเป็น"],
+  4: ["การเปรียบเทียบเศษส่วน", "แบบรูปจำนวน", "การแยกตัวประกอบ", "การคำนวณเศษส่วน", "ห.ร.ม.และค.ร.น.", "เส้นขนาน", "อัตราแลกเปลี่ยนเงิน", "พื้นที่สี่เหลี่ยมและวงกลม", "สมการ", "ความน่าจะเป็น", "การคำนวณเศษส่วน", "ปริมาตร", "ปริมาตร", "สมการเศษส่วน", "การแบ่งเศษส่วน", "โจทย์ปัญหาเงิน", "อัตราส่วน", "ปริมาตร", "ร้อยละ", "การคำนวณเงิน", "แบบรูปจำนวน", "พื้นที่รูปสี่เหลี่ยมคางหมู", "พื้นที่ภาคของวงกลม", "ปริมาตร", "กำไรและร้อยละ", "พื้นที่วงกลม", "รูปเรขาคณิตสามมิติ", "การนำเสนอข้อมูล", "กราฟและค่าเฉลี่ย", "การเรียงสับเปลี่ยน"],
+  5: ["ค่าประจำหลัก", "ห.ร.ม.", "การคำนวณทศนิยม", "เลขยกกำลัง", "การคำนวณเศษส่วน", "อนุกรมและผลบวก", "ห.ร.ม.และค.ร.น.", "ปริมาตร", "สมการ", "สัญลักษณ์การดำเนินการ", "สมการ", "เศษส่วน", "สมบัติของจำนวน", "การเปรียบเทียบเศษส่วน", "ห.ร.ม.", "ร้อยละและส่วนลด", "เวลาและปฏิทิน", "ค.ร.น.", "โจทย์ปัญหาอายุ", "แบบรูปจำนวน", "เศษส่วน", "วงกลมและพื้นที่", "เส้นทแยงมุมรูปหลายเหลี่ยม", "มุม", "เส้นขนานและมุม", "พื้นที่รูปสี่เหลี่ยม", "พื้นที่รูปสี่เหลี่ยมว่าว", "ปริมาตร", "แผนภูมิวงกลม", "ความน่าจะเป็น"]
+};
+
 // Mock Data for Offline Demo Mode (Used when CONFIG.API_URL is empty)
 const OFFLINE_MODE = {
   active: false,
@@ -329,6 +339,7 @@ function setupEventListeners() {
   document.getElementById("btn-refresh-submissions").addEventListener("click", fetchAdminAllData);
   document.getElementById("btn-export-submissions-csv").addEventListener("click", exportSubmissionsCSV);
   document.getElementById("select-analysis-set").addEventListener("change", renderWrongAnswersAnalysis);
+  document.getElementById("select-analysis-student").addEventListener("change", renderWrongAnswersAnalysis);
 
   // Admin login submission
   document.getElementById("btn-admin-auth-submit").addEventListener("click", handleAdminAuth);
@@ -1509,6 +1520,8 @@ function loadAdminSetSettings() {
   keysContainer.innerHTML = "";
   
   const answersList = exam.answers.split(",");
+  const topicsInput = document.getElementById("admin-question-topics");
+  if (topicsInput) topicsInput.value = getExamTopics(exam).join("\n");
   for (let i = 0; i < 30; i++) {
     const qNum = i + 1;
     const currentVal = answersList[i] || "1";
@@ -1570,6 +1583,15 @@ async function saveAdminExamSettings(e) {
   }
   
   const answersCsv = answerArray.join(",");
+  const topics = document.getElementById("admin-question-topics").value
+    .split(/\r?\n/)
+    .map(topic => topic.trim());
+  if (topics.length !== 30) {
+    spinner.classList.add("hidden");
+    msgDiv.className = "error-msg";
+    msgDiv.innerText = "กรุณาระบุหัวข้อให้ครบ 30 บรรทัด (ข้อ 1 ถึงข้อ 30)";
+    return;
+  }
   
   const res = await apiCall("updateExamSettings", {
     username: currentUser.username,
@@ -1579,7 +1601,8 @@ async function saveAdminExamSettings(e) {
     end_time: endTime,
     answers: answersCsv,
     release_answers: releaseAnswers,
-    passing_score: passingScore
+    passing_score: passingScore,
+    topics: JSON.stringify(topics)
   });
   
   spinner.classList.add("hidden");
@@ -2003,9 +2026,77 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
+function getExamTopics(exam) {
+  try {
+    const parsed = typeof exam.topics === "string" ? JSON.parse(exam.topics) : exam.topics;
+    if (Array.isArray(parsed) && parsed.length === 30) return parsed.map(topic => String(topic || "").trim());
+  } catch (e) {
+    console.warn("Invalid saved topic mapping", e);
+  }
+  const setId = Number(exam && exam.set_id);
+  return (DEFAULT_EXAM_TOPICS[setId] || Array(30).fill("")).slice();
+}
+
+function populateAnalysisStudents() {
+  const select = document.getElementById("select-analysis-student");
+  if (!select || !adminAllData) return;
+  const previous = select.value || "all";
+  const students = adminAllData.users
+    .filter(user => String(user.role).toLowerCase() === "student")
+    .sort((a, b) => String(a.nickname).localeCompare(String(b.nickname), "th"));
+  select.textContent = "";
+  const allOption = new Option("ทั้งห้อง", "all");
+  select.add(allOption);
+  students.forEach(student => select.add(new Option(`${student.nickname} (${student.username})`, student.username)));
+  select.value = [...select.options].some(option => option.value === previous) ? previous : "all";
+}
+
+function renderTopicAnalysis(exam, submissions, correctAnswers) {
+  const tbody = document.getElementById("table-body-topic-analysis");
+  if (!tbody) return;
+  tbody.textContent = "";
+  const topics = getExamTopics(exam);
+  const stats = {};
+  submissions.forEach(submission => {
+    const answers = String(submission.answers || "").split(",");
+    for (let index = 0; index < 30; index++) {
+      const topic = topics[index];
+      if (!topic) continue;
+      if (!stats[topic]) stats[topic] = { attempts: 0, correct: 0, questions: new Set() };
+      stats[topic].attempts++;
+      stats[topic].questions.add(index + 1);
+      if (String(answers[index] || "").trim() === String(correctAnswers[index] || "").trim()) stats[topic].correct++;
+    }
+  });
+
+  const rows = Object.keys(stats).map(topic => ({ topic, ...stats[topic], accuracy: stats[topic].attempts ? stats[topic].correct / stats[topic].attempts : 0 }))
+    .sort((a, b) => a.accuracy - b.accuracy || a.topic.localeCompare(b.topic, "th"));
+  if (!rows.length) {
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+    cell.colSpan = 5;
+    cell.textContent = topics.some(Boolean) ? "ยังไม่มีคำตอบที่ใช้วิเคราะห์" : "ยังไม่ได้กำหนดหัวข้อของข้อสอบชุดนี้";
+    cell.style.cssText = "text-align:center; padding:20px; color:var(--text-secondary);";
+    return;
+  }
+  rows.forEach(item => {
+    const rate = Math.round(item.accuracy * 100);
+    const status = rate < 50 ? "ควรเสริมด่วน" : rate < 70 ? "ควรทบทวน" : "ทำได้ดี";
+    const row = tbody.insertRow();
+    [item.topic, `${item.questions.size} ข้อ / ${item.attempts} คำตอบ`, `${item.correct} / ${item.attempts}`, `${rate}%`, status].forEach((value, index) => {
+      const cell = row.insertCell();
+      cell.textContent = value;
+      if (index > 0) cell.style.textAlign = "center";
+      if (index === 4) cell.style.fontWeight = "600";
+    });
+  });
+}
+
 // Render wrong answers analysis for the teacher
 function renderWrongAnswersAnalysis() {
   if (!adminAllData) return;
+
+  populateAnalysisStudents();
   
   const selectedSet = document.getElementById("select-analysis-set").value;
   const tbody = document.getElementById("table-body-analysis");
@@ -2020,8 +2111,11 @@ function renderWrongAnswersAnalysis() {
   const correctAnswers = exam.answers.split(",");
   
   // 2. Filter submissions for this set
-  const subs = adminAllData.submissions.filter(s => s.set_id.toString() === selectedSet.toString());
+  const selectedStudent = document.getElementById("select-analysis-student").value;
+  const subs = adminAllData.submissions.filter(s => s.set_id.toString() === selectedSet.toString() &&
+    (selectedStudent === "all" || String(s.username).toLowerCase() === selectedStudent.toLowerCase()));
   const totalSubmissions = subs.length;
+  renderTopicAnalysis(exam, subs, correctAnswers);
   
   document.getElementById("analysis-total-submissions").innerText = `${totalSubmissions} คน`;
   

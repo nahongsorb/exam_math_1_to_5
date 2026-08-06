@@ -431,6 +431,12 @@
                   </div>
                 </div>
 
+                <div class="form-group">
+                  <label for="admin-question-topics" style="font-weight:600; margin-bottom:6px; display:block;">หัวข้อคณิตศาสตร์ของแต่ละข้อ (30 บรรทัด)</label>
+                  <textarea id="admin-question-topics" class="form-control" rows="8" placeholder="ร้อยละ&#10;การแยกตัวประกอบ&#10;...&#10;ปริมาตร"></textarea>
+                  <small>บรรทัดที่ 1 คือข้อ 1 ถึงบรรทัดที่ 30 คือข้อ 30; พิมพ์เฉพาะชื่อหัวข้อ และใช้ชื่อเดิมซ้ำได้ เช่น “ร้อยละ” เพื่อรวมผลวิเคราะห์ ระบบจะไม่เปลี่ยนคะแนน</small>
+                </div>
+
                 <button type="submit" class="btn btn-primary" style="margin-top:15px;">
                   บันทึกการตั้งค่าทั้งหมดของชุดนี้
                   <span class="spinner hidden" id="save-settings-spinner"></span>
@@ -494,6 +500,12 @@
                 <option value="5">ชุดที่ 5</option>
               </select>
             </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <label for="select-analysis-student" style="white-space: nowrap; font-weight: 600;">นักเรียน:</label>
+              <select id="select-analysis-student" class="form-control filter-select" style="min-width: 180px;">
+                <option value="all">ทั้งห้อง</option>
+              </select>
+            </div>
             <span class="analysis-info-text" style="color: var(--text-secondary); font-size: 13px;">
               💡 วิเคราะห์สถิติจำนวนคนทำผิดในแต่ละข้อ เพื่อวิเคราะห์หาหัวข้อวิชาที่นักเรียนส่วนใหญ่ยังทำคะแนนได้น้อย
             </span>
@@ -511,6 +523,17 @@
             <div class="analysis-card glass-panel">
               <div class="analysis-card-title">ข้อที่นักเรียนทำผิดมากที่สุด</div>
               <div id="analysis-most-wrong-q" class="analysis-card-value color-danger">-</div>
+            </div>
+          </div>
+
+          <div class="glass-panel" style="padding:20px; margin-bottom:20px;">
+            <h3 style="margin:0 0 6px; color:var(--secondary-color);">ภาพรวมจุดอ่อนตามหัวข้อ</h3>
+            <p style="margin:0 0 14px; color:var(--text-secondary); font-size:13px;">เรียงจากหัวข้อที่ตอบถูกน้อยที่สุด หากยังไม่กำหนดหัวข้อให้แต่ละข้อ กรุณาตั้งค่าในแท็บแรกก่อน</p>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead><tr><th>หัวข้อ</th><th style="text-align:center;">จำนวนข้อ/คำตอบ</th><th style="text-align:center;">ตอบถูก</th><th style="text-align:center;">ความแม่นยำ</th><th style="text-align:center;">สถานะ</th></tr></thead>
+                <tbody id="table-body-topic-analysis"></tbody>
+              </table>
             </div>
           </div>
 
