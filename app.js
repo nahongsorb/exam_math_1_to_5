@@ -812,10 +812,21 @@ function updatePdfPageDisplay() {
   const totalPages = CONFIG.PAGES_CONFIG[currentSetId];
   document.getElementById("pdf-page-indicator").innerText = `หน้า ${currentPdfPage} / ${totalPages}`;
   
-  // PDF image path: images/set{N}/page_{M}.png
+  // ชุดที่ 1-5 ใช้ภาพที่แยกเป็นหน้า ส่วนชุดที่ 6-10 อ่านจาก PDF ต้นฉบับโดยตรง
   const imgElement = document.getElementById("pdf-page-image");
-  imgElement.style.transform = `scale(${pdfZoomScale})`;
-  imgElement.src = `images/set${currentSetId}/page_${currentPdfPage}.png`;
+  const pdfElement = document.getElementById("pdf-page-document");
+  const usesSourcePdf = Number(currentSetId) >= 6;
+  imgElement.classList.toggle("hidden", usesSourcePdf);
+  pdfElement.classList.toggle("hidden", !usesSourcePdf);
+
+  if (usesSourcePdf) {
+    pdfElement.style.transform = `scale(${pdfZoomScale})`;
+    const sourcePage = CONFIG.PDF_SOURCE_START_PAGES[currentSetId] + currentPdfPage - 1;
+    pdfElement.src = `ข้อสอบ_โรงเรียนดัง_ติวเข้า_ม_1_เทอม_2 - Copy (6-10).pdf#page=${sourcePage}&zoom=page-width`;
+  } else {
+    imgElement.style.transform = `scale(${pdfZoomScale})`;
+    imgElement.src = `images/set${currentSetId}/page_${currentPdfPage}.png`;
+  }
   
   // Enable / disable navigation buttons
   document.getElementById("btn-pdf-prev").disabled = (currentPdfPage <= 1);
@@ -830,6 +841,7 @@ function zoomPdf(factor) {
   
   document.getElementById("zoom-indicator").innerText = `${Math.round(pdfZoomScale * 100)}%`;
   document.getElementById("pdf-page-image").style.transform = `scale(${pdfZoomScale})`;
+  document.getElementById("pdf-page-document").style.transform = `scale(${pdfZoomScale})`;
 }
 
 // Change PDF Page
