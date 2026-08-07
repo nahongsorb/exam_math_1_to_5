@@ -597,7 +597,11 @@ async function loadPortal() {
     }
   }
   
-  const exams = res.data;
+  // A unique card per set, even if an old API deployment temporarily returns
+  // duplicate configuration rows during its migration.
+  const exams = res.data.filter((exam, index, all) =>
+    all.findIndex(candidate => String(candidate.set_id) === String(exam.set_id)) === index
+  );
   const container = document.getElementById("exam-cards-container");
   container.innerHTML = "";
   
