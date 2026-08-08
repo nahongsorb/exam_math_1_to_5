@@ -493,11 +493,11 @@
           </div>
         </div>
 
-        <!-- TAB 4: WRONG ANSWERS ANALYSIS -->
+        <!-- TAB 4: LEARNING ANALYSIS -->
         <div id="admin-tab-analysis" class="admin-tab-content">
-          <div class="filter-bar flex-wrap" style="gap: 15px; display: flex; align-items: center; justify-content: space-between; padding: 15px; border-radius: 12px; margin-bottom: 20px; background: rgba(255, 255, 255, 0.02);">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <label for="select-analysis-set" style="white-space: nowrap; font-weight: 600;">เลือกชุดข้อสอบ:</label>
+          <div class="analysis-filter-bar">
+            <div class="analysis-filter-control">
+              <label for="select-analysis-set">เลือกชุดข้อสอบ</label>
               <select id="select-analysis-set" class="form-control filter-select" style="min-width: 150px;">
                 <option value="all" selected>รวมทุกชุด</option>
                 <option value="1">ชุดที่ 1</option>
@@ -512,61 +512,95 @@
                 <option value="10">ชุดที่ 10</option>
               </select>
             </div>
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <label for="select-analysis-student" style="white-space: nowrap; font-weight: 600;">นักเรียน:</label>
+            <div class="analysis-filter-control">
+              <label for="select-analysis-student">นักเรียน</label>
               <select id="select-analysis-student" class="form-control filter-select" style="min-width: 180px;">
                 <option value="all">ทั้งห้อง</option>
               </select>
             </div>
-            <span class="analysis-info-text" style="color: var(--text-secondary); font-size: 13px;">
-              💡 สรุปความแม่นยำตามบทเรียนจากคำตอบที่นักเรียนส่ง เพื่อดูบทที่ควรเสริมและบทที่ทำได้ดี
-            </span>
+            <p class="analysis-info-text">สรุปจากคำตอบที่ส่ง เพื่อดูคะแนน บทที่ควรเสริม และสิ่งที่ควรทำต่อ</p>
           </div>
 
           <div class="analysis-summary-cards">
             <div class="analysis-card glass-panel">
-              <div class="analysis-card-title">จำนวนผู้ส่งสอบทั้งหมด</div>
-              <div id="analysis-total-submissions" class="analysis-card-value color-secondary">0 คน</div>
+              <div id="analysis-score-label" class="analysis-card-title">คะแนนนักเรียน</div>
+              <div id="analysis-student-score" class="analysis-card-value color-primary">- / 30</div>
+              <div id="analysis-score-detail" class="analysis-card-detail">ยังไม่มีข้อมูล</div>
             </div>
             <div class="analysis-card glass-panel">
-              <div class="analysis-card-title">คะแนนเฉลี่ยของห้อง</div>
-              <div id="analysis-avg-score" class="analysis-card-value color-success">0.00 / 30</div>
+              <div class="analysis-card-title">ความแม่นยำ</div>
+              <div id="analysis-accuracy" class="analysis-card-value color-success">0%</div>
+              <div id="analysis-accuracy-detail" class="analysis-card-detail">ถูก 0 · ผิด 0</div>
             </div>
             <div class="analysis-card glass-panel">
-              <div class="analysis-card-title">บทเรียนที่ควรเสริมมากที่สุด</div>
-              <div id="analysis-most-wrong-q" class="analysis-card-value color-danger">-</div>
+              <div class="analysis-card-title">จำนวนชุดที่ทำ</div>
+              <div id="analysis-completed-sets" class="analysis-card-value color-secondary">0 ชุด</div>
+              <div id="analysis-completed-detail" class="analysis-card-detail">ยังไม่มีการส่งคำตอบ</div>
+            </div>
+            <div class="analysis-card glass-panel">
+              <div class="analysis-card-title">ค่าเฉลี่ยห้อง</div>
+              <div id="analysis-class-average" class="analysis-card-value color-neutral">- / 30</div>
+              <div id="analysis-class-average-detail" class="analysis-card-detail">ใช้ชุดข้อสอบที่เลือก</div>
             </div>
           </div>
 
-          <div class="glass-panel" style="padding:20px; margin-bottom:20px;">
-            <h3 style="margin:0 0 6px; color:var(--secondary-color);">ภาพรวมคะแนนตามบทเรียน</h3>
-            <p style="margin:0 0 14px; color:var(--text-secondary); font-size:13px;">เรียงจากบทเรียนที่ตอบถูกน้อยที่สุด โดยนับเฉพาะข้อที่มีการส่งคำตอบ</p>
-            <div class="table-responsive">
-              <table class="data-table">
-                <thead><tr><th>บทเรียน</th><th style="text-align:center;">จำนวนข้อ/คำตอบ</th><th style="text-align:center;">ตอบถูก</th><th style="text-align:center;">ความแม่นยำ</th><th style="text-align:center;">สถานะ</th></tr></thead>
-                <tbody id="table-body-topic-analysis"></tbody>
-              </table>
+          <section class="analysis-insight-card glass-panel" aria-labelledby="analysis-weakness-heading">
+            <div>
+              <p class="analysis-kicker">โฟกัสก่อน</p>
+              <h3 id="analysis-weakness-heading">บทที่ควรเสริมมากที่สุด</h3>
             </div>
-          </div>
+            <div id="analysis-weakness-list" class="analysis-weakness-list" aria-live="polite"></div>
+          </section>
 
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th style="width: 80px; text-align: center;">ข้อที่</th>
-                  <th style="text-align: center; width: 180px;">อัตราการตอบผิด (%)</th>
-                  <th style="text-align: center; width: 150px;">จำนวนคนตอบผิด (คน)</th>
-                  <th style="text-align: center;">ตัวเลือกยอดนิยมที่เด็กตอบผิด</th>
-                  <th style="text-align: center; width: 150px; color: var(--success-color);">เฉลยที่ถูกต้อง</th>
-                </tr>
-              </thead>
-              <tbody id="table-body-analysis">
-                <tr>
-                  <td colspan="5" style="text-align:center; padding:30px; color:var(--text-secondary);">กำลังโหลดข้อมูลการวิเคราะห์...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <section class="analysis-action-card glass-panel" aria-labelledby="analysis-action-heading">
+            <div class="analysis-action-icon" aria-hidden="true">✓</div>
+            <div>
+              <p class="analysis-kicker">สิ่งที่ควรทำต่อ</p>
+              <h3 id="analysis-action-heading">คำแนะนำจากผลคะแนนจริง</h3>
+              <p id="analysis-next-action" class="analysis-next-action" aria-live="polite">รอข้อมูลคำตอบเพื่อสร้างคำแนะนำ</p>
+            </div>
+          </section>
+
+          <section class="analysis-topic-card glass-panel" aria-labelledby="analysis-topic-heading">
+            <div class="analysis-section-heading">
+              <div>
+                <p class="analysis-kicker">คะแนนรายบท</p>
+                <h3 id="analysis-topic-heading">ภาพรวมคะแนนตามบทเรียน</h3>
+              </div>
+              <p>เรียงคะแนนต่ำไปสูง</p>
+            </div>
+            <div id="analysis-topic-list" class="analysis-topic-list" aria-live="polite"></div>
+          </section>
+
+          <details class="analysis-details glass-panel">
+            <summary>ดูรายละเอียดทั้งหมด</summary>
+            <div class="analysis-details-content">
+              <h3>รายละเอียดคะแนนรายบท</h3>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead><tr><th>บทเรียน</th><th style="text-align:center;">จำนวนข้อ/คำตอบ</th><th style="text-align:center;">ตอบถูก</th><th style="text-align:center;">ความแม่นยำ</th><th style="text-align:center;">สถานะ</th></tr></thead>
+                  <tbody id="table-body-topic-analysis"></tbody>
+                </table>
+              </div>
+              <h3 id="analysis-question-detail-heading">รายละเอียดรายข้อ</h3>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 80px; text-align: center;">ข้อที่</th>
+                      <th style="text-align: center; width: 180px;">อัตราการตอบผิด (%)</th>
+                      <th style="text-align: center; width: 150px;">จำนวนคนตอบผิด (คน)</th>
+                      <th style="text-align: center;">ตัวเลือกยอดนิยมที่ตอบผิด</th>
+                      <th style="text-align: center; width: 150px; color: var(--success-color);">เฉลยที่ถูกต้อง</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-body-analysis">
+                    <tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-secondary);">กำลังโหลดข้อมูลการวิเคราะห์...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
         </div>
 
         <!-- TAB 3: REGISTERED USERS -->

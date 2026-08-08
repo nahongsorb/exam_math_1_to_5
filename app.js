@@ -2094,7 +2094,8 @@ function getExamTopics(exam) {
     // verified standard map below.
     if (savedTopics && savedTopics.every(topic => LEARNING_CHAPTERS.includes(topic))) return savedTopics;
   } catch (e) {
-    console.warn("Invalid saved topic mapping", e);
+    // Older records can have an empty or incomplete topic field. The verified
+    // standard mapping below is the safe fallback for those records.
   }
   return (defaultTopics || Array(30).fill("")).slice();
 }
@@ -2113,7 +2114,7 @@ function populateAnalysisStudents() {
   select.value = [...select.options].some(option => option.value === previous) ? previous : "all";
 }
 
-function renderTopicAnalysis(exams, submissions) {
+function renderLegacyTopicAnalysis(exams, submissions) {
   const tbody = document.getElementById("table-body-topic-analysis");
   if (!tbody) return;
   tbody.textContent = "";
@@ -2163,7 +2164,7 @@ function renderTopicAnalysis(exams, submissions) {
 }
 
 // Render wrong answers analysis for the teacher
-function renderWrongAnswersAnalysis() {
+function renderLegacyWrongAnswersAnalysis() {
   if (!adminAllData) return;
 
   populateAnalysisStudents();
@@ -2316,5 +2317,219 @@ function renderWrongAnswersAnalysis() {
     tbody.appendChild(tr);
   }
   
+  refreshIcons();
+}
+
+function getAnalysisStatus(rate) {
+  if (rate < 65) return { label: "ต้องเสริม", className: "needs-support" };
+  if (rate < 80) return { label: "ควรทบทวน", className: "needs-review" };
+  return { label: "ทำได้ดี", className: "doing-well" };
+}
+
+function getAnalysisTopicRows(exams, submissions) {
+  const examsById = new Map(exams.map(exam => [String(exam.set_id), exam]));
+  const stats = {};
+  submissions.forEach(submission => {
+    const exam = examsById.get(String(submission.set_id));
+    if (!exam || !exam.answers) return;
+    const topics = getExamTopics(exam);
+    const correctAnswers = String(exam.answers).split(",");
+    const answers = String(submission.answers || "").split(",");
+    for (let index = 0; index < 30; index++) {
+      const topic = topics[index];
+      const answer = String(answers[index] || "").trim();
+      if (!topic || !["1", "2", "3", "4"].includes(answer)) continue;
+      if (!stats[topic]) stats[topic] = { attempts: 0, correct: 0, questions: new Set() };
+      stats[topic].attempts++;
+      stats[topic].questions.add(`${submission.set_id}-${index + 1}`);
+      if (answer === String(correctAnswers[index] || "").trim()) stats[topic].correct++;
+    }
+  });
+  return Object.keys(stats)
+    .map(topic => {
+      const item = stats[topic];
+      const accuracy = item.attempts ? item.correct / item.attempts : 0;
+      return { topic, ...item, accuracy, rate: Math.round(accuracy * 100), wrong: item.attempts - item.correct };
+    })
+    .sort((a, b) => a.accuracy - b.accuracy || a.topic.localeCompare(b.topic, "th"));
+}
+
+function renderTopicAnalysis(rows) {
+  const list = document.getElementById("analysis-topic-list");
+  const tbody = document.getElementById("table-body-topic-analysis");
+  if (!list || !tbody) return;
+  list.textContent = "";
+  tbody.textContent = "";
+
+  if (!rows.length) {
+    list.innerHTML = '<p class="analysis-empty-state">ยังไม่มีคำตอบที่ใช้วิเคราะห์</p>';
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+    cell.colSpan = 5;
+    cell.textContent = "ยังไม่มีคำตอบที่ใช้วิเคราะห์";
+    cell.style.cssText = "text-align:center; padding:20px; color:var(--text-secondary);";
+    return;
+  }
+
+  rows.forEach(item => {
+    const status = getAnalysisStatus(item.rate);
+    const article = document.createElement("article");
+    article.className = "analysis-topic-row";
+    article.innerHTML = `
+      <div class="analysis-topic-row-header">
+        <div class="analysis-topic-name">${escapeHtml(item.topic)}</div>
+        <div class="analysis-topic-score ${status.className}">${item.rate}%</div>
+      </div>
+      <div class="analysis-progress-track" aria-label="ความแม่นยำ ${item.rate}%">
+        <div class="analysis-progress-fill ${status.className}" style="width:${item.rate}%"></div>
+      </div>
+      <div class="analysis-topic-row-meta">
+        <span>ถูก ${item.correct} · ผิด ${item.wrong}</span>
+        <span class="analysis-status ${status.className}">${status.label}</span>
+      </div>`;
+    list.appendChild(article);
+
+    const row = tbody.insertRow();
+    [item.topic, `${item.questions.size} ข้อ / ${item.attempts} คำตอบ`, `${item.correct} / ${item.attempts}`, `${item.rate}%`, status.label].forEach((value, index) => {
+      const cell = row.insertCell();
+      cell.textContent = value;
+      if (index > 0) cell.style.textAlign = "center";
+      if (index === 4) cell.style.fontWeight = "600";
+    });
+  });
+}
+
+function renderAnalysisWeaknesses(rows) {
+  const container = document.getElementById("analysis-weakness-list");
+  if (!container) return;
+  container.textContent = "";
+  const weakRows = rows.filter(item => item.rate < 80).slice(0, 3);
+  if (!weakRows.length) {
+    const message = document.createElement("p");
+    message.className = "analysis-positive-note";
+    message.textContent = rows.length ? "ทำได้ดีทุกบทที่มีข้อมูล" : "ยังไม่มีข้อมูลเพียงพอ";
+    container.appendChild(message);
+    return;
+  }
+  weakRows.forEach(item => {
+    const status = getAnalysisStatus(item.rate);
+    const chip = document.createElement("div");
+    chip.className = `analysis-weakness-chip ${status.className}`;
+    chip.innerHTML = `<span>${escapeHtml(item.topic)}</span><strong>${item.rate}%</strong>`;
+    container.appendChild(chip);
+  });
+}
+
+function renderAnalysisNextAction(rows) {
+  const target = document.getElementById("analysis-next-action");
+  if (!target) return;
+  const focus = rows.find(item => item.rate < 65) || rows.find(item => item.rate < 80);
+  if (!focus) {
+    target.textContent = rows.length ? "รักษาระดับการทำได้ดี และเลือกทำข้อสอบชุดถัดไปเพื่อเก็บข้อมูลต่อเนื่อง" : "ให้นักเรียนทำข้อสอบอย่างน้อย 1 ชุด เพื่อเริ่มสรุปผลตามบทเรียน";
+    return;
+  }
+  const status = getAnalysisStatus(focus.rate);
+  const action = status.className === "needs-support" ? "เริ่มทบทวนบท" : "ทบทวนบท";
+  target.textContent = `${action} “${focus.topic}” ก่อน เพราะความแม่นยำอยู่ที่ ${focus.rate}% (ถูก ${focus.correct} จาก ${focus.attempts} ข้อที่ตอบ)`;
+}
+
+function renderQuestionAnalysis(exam, submissions, selectedSet) {
+  const tbody = document.getElementById("table-body-analysis");
+  const heading = document.getElementById("analysis-question-detail-heading");
+  if (!tbody) return;
+  tbody.textContent = "";
+  if (selectedSet === "all") {
+    if (heading) heading.textContent = "รายละเอียดรายข้อ";
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-secondary);">เลือกข้อสอบหนึ่งชุดเพื่อดูรายละเอียดรายข้อ</td></tr>';
+    return;
+  }
+  if (heading) heading.textContent = `รายละเอียดรายข้อ: ชุดที่ ${selectedSet}`;
+  if (!exam || !exam.answers || !submissions.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-secondary);">ยังไม่มีประวัติการส่งข้อสอบชุดนี้</td></tr>';
+    return;
+  }
+  const correctAnswers = String(exam.answers).split(",");
+  const wrongCounts = Array(30).fill(0);
+  const choiceTallies = Array.from({ length: 30 }, () => ({ "1": 0, "2": 0, "3": 0, "4": 0, "": 0 }));
+  submissions.forEach(submission => {
+    const answers = String(submission.answers || "").split(",");
+    for (let index = 0; index < 30; index++) {
+      const answer = String(answers[index] || "").trim();
+      const correct = String(correctAnswers[index] || "").trim();
+      if (["1", "2", "3", "4"].includes(answer)) choiceTallies[index][answer]++;
+      else choiceTallies[index][""]++;
+      if (answer !== correct) wrongCounts[index]++;
+    }
+  });
+  for (let index = 0; index < 30; index++) {
+    const wrongRate = Math.round((wrongCounts[index] / submissions.length) * 100);
+    const tallies = choiceTallies[index];
+    const correct = String(correctAnswers[index] || "").trim();
+    let popularWrong = "-";
+    let popularCount = 0;
+    ["1", "2", "3", "4", ""].forEach(choice => {
+      if (choice !== correct && tallies[choice] > popularCount) {
+        popularCount = tallies[choice];
+        popularWrong = choice ? `ตัวเลือก ${choice} (${popularCount} คน)` : `ไม่ตอบ (${popularCount} คน)`;
+      }
+    });
+    const severityClass = wrongRate >= 70 ? "high-error" : wrongRate >= 40 ? "medium-error" : "";
+    const row = document.createElement("tr");
+    row.className = severityClass;
+    row.innerHTML = `
+      <td style="text-align:center; font-weight:700;">${index + 1}</td>
+      <td style="text-align:center;"><div class="wrong-rate-bar-container"><div class="wrong-rate-bar-bg"><div class="wrong-rate-bar-fill" style="width:${wrongRate}%; background-color:${severityClass === "high-error" ? "var(--danger-color)" : severityClass === "medium-error" ? "var(--warning-color)" : "var(--success-color)"};"></div></div><span class="wrong-rate-txt">${wrongRate}%</span></div></td>
+      <td style="text-align:center;">${wrongCounts[index]} / ${submissions.length}</td>
+      <td style="text-align:center; color:var(--text-secondary);">${popularWrong}</td>
+      <td style="text-align:center; font-weight:700; color:var(--success-color);">ตัวเลือก ${correct}</td>`;
+    tbody.appendChild(row);
+  }
+}
+
+function renderWrongAnswersAnalysis() {
+  if (!adminAllData) return;
+  populateAnalysisStudents();
+  const selectedSet = document.getElementById("select-analysis-set").value;
+  const selectedStudent = document.getElementById("select-analysis-student").value;
+  const isIndividual = selectedStudent !== "all";
+  const exams = adminAllData.exams.filter(exam => exam.answers);
+  const selectedExam = selectedSet === "all" ? null : exams.find(exam => String(exam.set_id) === String(selectedSet));
+  const scopeExams = selectedSet === "all" ? exams : (selectedExam ? [selectedExam] : []);
+  const scopeSubmissions = adminAllData.submissions.filter(submission =>
+    (selectedSet === "all" || String(submission.set_id) === String(selectedSet)) &&
+    (!isIndividual || String(submission.username).toLowerCase() === selectedStudent.toLowerCase())
+  );
+  const classSubmissions = adminAllData.submissions.filter(submission =>
+    selectedSet === "all" || String(submission.set_id) === String(selectedSet)
+  );
+  const rows = getAnalysisTopicRows(scopeExams, scopeSubmissions);
+  const totalScore = scopeSubmissions.reduce((sum, item) => sum + (Number(item.score) || 0), 0);
+  const scoreAverage = scopeSubmissions.length ? totalScore / scopeSubmissions.length : 0;
+  const classScore = classSubmissions.length
+    ? classSubmissions.reduce((sum, item) => sum + (Number(item.score) || 0), 0) / classSubmissions.length
+    : 0;
+  const attempts = rows.reduce((sum, item) => sum + item.attempts, 0);
+  const correct = rows.reduce((sum, item) => sum + item.correct, 0);
+  const uniqueSets = new Set(scopeSubmissions.map(item => String(item.set_id))).size;
+  const selectedStudentName = (adminAllData.users || []).find(user => String(user.username).toLowerCase() === selectedStudent.toLowerCase())?.nickname;
+
+  document.getElementById("analysis-score-label").textContent = isIndividual ? "คะแนนนักเรียน" : "คะแนนเฉลี่ยตามตัวกรอง";
+  document.getElementById("analysis-student-score").textContent = scopeSubmissions.length ? `${scoreAverage.toFixed(2)} / 30` : "- / 30";
+  document.getElementById("analysis-score-detail").textContent = isIndividual
+    ? `${selectedStudentName || selectedStudent} · ${scopeSubmissions.length} ครั้งที่ส่ง`
+    : `${scopeSubmissions.length} ครั้งที่ส่ง`;
+  document.getElementById("analysis-accuracy").textContent = attempts ? `${Math.round((correct / attempts) * 100)}%` : "0%";
+  document.getElementById("analysis-accuracy-detail").textContent = `ถูก ${correct} · ผิด ${Math.max(0, attempts - correct)}`;
+  document.getElementById("analysis-completed-sets").textContent = `${uniqueSets} ชุด`;
+  document.getElementById("analysis-completed-detail").textContent = scopeSubmissions.length ? `${scopeSubmissions.length} ครั้งที่ส่งคำตอบ` : "ยังไม่มีการส่งคำตอบ";
+  document.getElementById("analysis-class-average").textContent = classSubmissions.length ? `${classScore.toFixed(2)} / 30` : "- / 30";
+  document.getElementById("analysis-class-average-detail").textContent = isIndividual
+    ? `เฉลี่ยจาก ${new Set(classSubmissions.map(item => String(item.username))).size} คน`
+    : "เลือกดูทั้งห้อง";
+
+  renderAnalysisWeaknesses(rows);
+  renderAnalysisNextAction(rows);
+  renderTopicAnalysis(rows);
+  renderQuestionAnalysis(selectedExam, scopeSubmissions, selectedSet);
   refreshIcons();
 }
