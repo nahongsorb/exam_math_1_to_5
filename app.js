@@ -4,6 +4,7 @@ let currentSetId = null;
 let currentPdfPage = 1;
 let pdfZoomScale = 1.0;
 let studentAnswers = Array(30).fill(null);
+let studentDashboardData = null;
 
 // Re-exam active state
 let currentReExamSetId = null;
@@ -282,6 +283,12 @@ function setupEventListeners() {
     showSection("leaderboard-section");
     loadLeaderboard(false); // Load full table
   });
+  document.getElementById("btn-show-student-dashboard").addEventListener("click", openStudentDashboard);
+  document.getElementById("btn-student-dashboard-back").addEventListener("click", () => {
+    showSection("portal-section");
+    loadPortal();
+  });
+  document.getElementById("select-student-dashboard-set").addEventListener("change", renderStudentDashboard);
   document.getElementById("btn-leaderboard-back").addEventListener("click", () => {
     showSection("portal-section");
     loadPortal();
@@ -441,6 +448,12 @@ async function apiCall(action, data = {}) {
   }
 }
 
+function updateStudentDashboardButton() {
+  const button = document.getElementById("btn-show-student-dashboard");
+  if (!button) return;
+  button.classList.toggle("hidden", !currentUser || currentUser.role !== "student");
+}
+
 // Check logged in user from LocalStorage
 function checkLoginStatus() {
   const cached = localStorage.getItem("exam_user");
@@ -462,6 +475,7 @@ function checkLoginStatus() {
     document.getElementById("user-info-area").classList.remove("hidden");
     document.getElementById("btn-logout").classList.remove("hidden");
     document.getElementById("btn-show-leaderboard").classList.remove("hidden");
+    updateStudentDashboardButton();
     showSection("portal-section");
     loadPortal();
   } else {
@@ -490,6 +504,7 @@ async function handleLogin(e) {
     document.getElementById("user-info-area").classList.remove("hidden");
     document.getElementById("btn-logout").classList.remove("hidden");
     document.getElementById("btn-show-leaderboard").classList.remove("hidden");
+    updateStudentDashboardButton();
     
     showSection("portal-section");
     loadPortal();
@@ -544,7 +559,128 @@ function handleLogout() {
   document.getElementById("user-info-area").classList.add("hidden");
   document.getElementById("btn-logout").classList.add("hidden");
   document.getElementById("btn-show-leaderboard").classList.add("hidden");
+  updateStudentDashboardButton();
   showSection("auth-section");
+}
+
+async function openStudentDashboard() {
+  if (!currentUser || currentUser.role !== "student") return;
+  showSection("student-dashboard-section");
+  showLoading("กำลังวิเคราะห์คะแนนตามบทเรียน...");
+  const res = await apiCall("getStudentDashboard");
+  hideLoading();
+  if (!res.success) {
+    alert(res.message || "ไม่สามารถโหลดแดชบอร์ดคะแนนได้");
+    showSection("portal-section");
+    return;
+  }
+  studentDashboardData = res.data || { submitted_sets: [], analyses: {} };
+  populateStudentDashboardSets();
+  renderStudentDashboard();
+  refreshIcons();
+}
+
+function populateStudentDashboardSets() {
+  const select = document.getElementById("select-student-dashboard-set");
+  if (!select) return;
+  const previous = select.value || "all";
+  const sets = Array.isArray(studentDashboardData && studentDashboardData.submitted_sets)
+    ? studentDashboardData.submitted_sets : [];
+  select.textContent = "";
+  const allOption = document.createElement("option");
+  allOption.value = "all";
+  allOption.textContent = "รวมทุกชุดที่ทำ";
+  select.appendChild(allOption);
+  sets.forEach(setId => {
+    const option = document.createElement("option");
+    option.value = String(setId);
+    option.textContent = `ชุดที่ ${setId}`;
+    select.appendChild(option);
+  });
+  select.value = sets.includes(previous) ? previous : "all";
+}
+
+function renderStudentDashboard() {
+  const selectedSet = document.getElementById("select-student-dashboard-set").value;
+  const analysis = (studentDashboardData && studentDashboardData.analyses && studentDashboardData.analyses[selectedSet]) || {
+    submission_count: 0, unique_set_count: 0, average_score: 0, attempts: 0,
+    correct: 0, wrong: 0, accuracy: 0, topics: []
+  };
+  const topics = Array.isArray(analysis.topics) ? analysis.topics : [];
+  document.getElementById("student-dashboard-score").textContent = analysis.submission_count ? `${Number(analysis.average_score).toFixed(1)} / 30` : "- / 30";
+  document.getElementById("student-dashboard-score-detail").textContent = analysis.submission_count
+    ? `จากการส่ง ${analysis.submission_count} ครั้ง` : "ยังไม่มีการส่งคำตอบ";
+  document.getElementById("student-dashboard-accuracy").textContent = `${analysis.accuracy || 0}%`;
+  document.getElementById("student-dashboard-accuracy-detail").textContent = `ถูก ${analysis.correct || 0} ข้อ · ผิด ${analysis.wrong || 0} ข้อ`;
+  document.getElementById("student-dashboard-sets").textContent = `${analysis.unique_set_count || 0} ชุด`;
+  document.getElementById("student-dashboard-sets-detail").textContent = analysis.submission_count
+    ? `จากการส่ง ${analysis.submission_count} ครั้ง` : "ยังไม่มีการส่งคำตอบ";
+  renderStudentDashboardWeaknesses(topics);
+  renderStudentDashboardAction(topics);
+  renderStudentDashboardTopics(topics);
+}
+
+function renderStudentDashboardWeaknesses(rows) {
+  const container = document.getElementById("student-dashboard-weakness-list");
+  if (!container) return;
+  container.textContent = "";
+  const weakRows = rows.filter(item => item.rate < 80).slice(0, 3);
+  if (!weakRows.length) {
+    const note = document.createElement("p");
+    note.className = "analysis-positive-note";
+    note.textContent = rows.length ? "ทำได้ดีในทุกบทที่มีข้อมูล" : "ทำข้อสอบอย่างน้อย 1 ชุด เพื่อเริ่มดูคะแนนรายบท";
+    container.appendChild(note);
+    return;
+  }
+  weakRows.forEach(item => {
+    const status = getAnalysisStatus(item.rate);
+    const chip = document.createElement("div");
+    chip.className = `analysis-weakness-chip ${status.className}`;
+    chip.innerHTML = `<span>${escapeHtml(item.topic)}</span><strong>${item.rate}%</strong>`;
+    container.appendChild(chip);
+  });
+}
+
+function renderStudentDashboardAction(rows) {
+  const target = document.getElementById("student-dashboard-next-action");
+  if (!target) return;
+  const focus = rows.find(item => item.rate < 65) || rows.find(item => item.rate < 80);
+  if (!focus) {
+    target.textContent = rows.length
+      ? "รักษาระดับการทำได้ดี และทำข้อสอบชุดถัดไปเพื่อให้เห็นพัฒนาการต่อเนื่อง"
+      : "ทำข้อสอบอย่างน้อย 1 ชุด แล้วกลับมาดูบทที่ควรทบทวนได้ที่นี่";
+    return;
+  }
+  const action = focus.rate < 65 ? "เริ่มทบทวนบท" : "ทบทวนบท";
+  target.textContent = `${action} “${focus.topic}” ก่อน เพราะความแม่นยำอยู่ที่ ${focus.rate}% (ถูก ${focus.correct} จาก ${focus.attempts} ข้อที่ตอบ)`;
+}
+
+function renderStudentDashboardTopics(rows) {
+  const container = document.getElementById("student-dashboard-topic-list");
+  if (!container) return;
+  container.textContent = "";
+  if (!rows.length) {
+    container.innerHTML = '<p class="analysis-empty-state">ยังไม่มีคำตอบที่ใช้วิเคราะห์คะแนนรายบท</p>';
+    return;
+  }
+  rows.forEach(item => {
+    const status = getAnalysisStatus(item.rate);
+    const article = document.createElement("article");
+    article.className = "analysis-topic-row";
+    article.innerHTML = `
+      <div class="analysis-topic-row-header">
+        <div class="analysis-topic-name">${escapeHtml(item.topic)}</div>
+        <div class="analysis-topic-score ${status.className}">${item.rate}%</div>
+      </div>
+      <div class="analysis-progress-track" aria-label="ความแม่นยำ ${item.rate}%">
+        <div class="analysis-progress-fill ${status.className}" style="width:${item.rate}%"></div>
+      </div>
+      <div class="analysis-topic-row-meta">
+        <span>ถูก ${item.correct} ข้อ · ผิด ${item.wrong} ข้อ</span>
+        <span class="analysis-status ${status.className}">${status.label}</span>
+      </div>`;
+    container.appendChild(article);
+  });
 }
 
 // Generate the Workspace's Answer Sheet (30 questions layout)
@@ -1826,6 +1962,50 @@ function handleOfflineApi(action, data) {
       });
     }
     return { success: true, data: clean, pending_re_exams: pendingReExams };
+
+  } else if (action === "getStudentDashboard") {
+    const targetUser = (currentUser && currentUser.username ? currentUser.username : data.username || "").trim().toLowerCase();
+    const ownSubmissions = dbSubmissions.filter(submission => String(submission.username || "").trim().toLowerCase() === targetUser);
+    const examById = new Map(dbExams.map(exam => [String(exam.set_id), exam]));
+    const buildAnalysis = (submissions) => {
+      const stats = {};
+      const setIds = new Set();
+      let totalScore = 0;
+      submissions.forEach(submission => {
+        const exam = examById.get(String(submission.set_id));
+        if (!exam || !exam.answers) return;
+        totalScore += Number(submission.score) || 0;
+        setIds.add(String(submission.set_id));
+        const answers = String(submission.answers || "").split(",");
+        const correctAnswers = String(exam.answers).split(",");
+        const topics = getExamTopics(exam);
+        for (let index = 0; index < 30; index++) {
+          const topic = topics[index];
+          const answer = String(answers[index] || "").trim();
+          if (!topic || !["1", "2", "3", "4"].includes(answer)) continue;
+          if (!stats[topic]) stats[topic] = { attempts: 0, correct: 0, questions: new Set() };
+          stats[topic].attempts++;
+          stats[topic].questions.add(`${submission.set_id}-${index + 1}`);
+          if (answer === String(correctAnswers[index] || "").trim()) stats[topic].correct++;
+        }
+      });
+      const topics = Object.entries(stats).map(([topic, item]) => ({
+        topic, attempts: item.attempts, correct: item.correct, wrong: item.attempts - item.correct,
+        rate: Math.round((item.correct / item.attempts) * 100), question_count: item.questions.size
+      })).sort((a, b) => a.rate - b.rate || a.topic.localeCompare(b.topic, "th"));
+      const attempts = topics.reduce((sum, item) => sum + item.attempts, 0);
+      const correct = topics.reduce((sum, item) => sum + item.correct, 0);
+      return {
+        submission_count: submissions.length, unique_set_count: setIds.size,
+        average_score: submissions.length ? Math.round((totalScore / submissions.length) * 10) / 10 : 0,
+        attempts, correct, wrong: attempts - correct,
+        accuracy: attempts ? Math.round((correct / attempts) * 100) : 0, topics
+      };
+    };
+    const submittedSets = [...new Set(ownSubmissions.map(submission => String(submission.set_id)))].sort((a, b) => Number(a) - Number(b));
+    const analyses = { all: buildAnalysis(ownSubmissions) };
+    submittedSets.forEach(setId => { analyses[setId] = buildAnalysis(ownSubmissions.filter(submission => String(submission.set_id) === setId)); });
+    return { success: true, data: { submitted_sets: submittedSets, analyses } };
     
   } else if (action === "submitExam") {
     const isRe = data.is_re_exam === true || data.is_re_exam === "true";

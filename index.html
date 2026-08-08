@@ -38,6 +38,11 @@
           <span class="btn-label">อันดับคะแนน (Leaderboard)</span>
         </button>
 
+        <button id="btn-show-student-dashboard" class="btn btn-secondary hidden">
+          <i data-lucide="bar-chart-3" class="icon-sm"></i>
+          <span class="btn-label">ผลคะแนนของฉัน</span>
+        </button>
+
         <button id="btn-show-admin" class="btn btn-secondary">
           <i data-lucide="settings" class="icon-sm"></i>
           <span class="btn-label">สำหรับคุณครู</span>
@@ -185,7 +190,74 @@
       </div>
     </section>
 
-    <!-- 3. FULL LEADERBOARD SECTION -->
+    <!-- 3. STUDENT'S OWN LEARNING DASHBOARD -->
+    <section id="student-dashboard-section" class="view-section">
+      <div class="student-dashboard-container">
+        <div class="student-dashboard-header">
+          <div>
+            <p class="analysis-kicker">แดชบอร์ดส่วนตัว</p>
+            <h1 class="section-title">ผลคะแนนตามบทเรียนของฉัน</h1>
+            <p class="student-dashboard-subtitle">สรุปจากคำตอบที่ส่งแล้ว เพื่อให้เห็นบทที่ควรทบทวนก่อน</p>
+          </div>
+          <button id="btn-student-dashboard-back" class="btn btn-secondary">กลับหน้าข้อสอบ</button>
+        </div>
+
+        <div class="student-dashboard-filter glass-panel">
+          <label for="select-student-dashboard-set">เลือกชุดข้อสอบ</label>
+          <select id="select-student-dashboard-set" class="form-control filter-select">
+            <option value="all">รวมทุกชุดที่ทำ</option>
+          </select>
+        </div>
+
+        <div class="analysis-summary-cards student-summary-cards">
+          <div class="analysis-card glass-panel">
+            <div class="analysis-card-title">คะแนนเฉลี่ยของฉัน</div>
+            <div id="student-dashboard-score" class="analysis-card-value color-primary">- / 30</div>
+            <div id="student-dashboard-score-detail" class="analysis-card-detail">รอข้อมูลการส่งคำตอบ</div>
+          </div>
+          <div class="analysis-card glass-panel">
+            <div class="analysis-card-title">ความแม่นยำ</div>
+            <div id="student-dashboard-accuracy" class="analysis-card-value color-success">0%</div>
+            <div id="student-dashboard-accuracy-detail" class="analysis-card-detail">ถูก 0 ข้อ · ผิด 0 ข้อ</div>
+          </div>
+          <div class="analysis-card glass-panel">
+            <div class="analysis-card-title">จำนวนชุดที่ทำ</div>
+            <div id="student-dashboard-sets" class="analysis-card-value color-secondary">0 ชุด</div>
+            <div id="student-dashboard-sets-detail" class="analysis-card-detail">ยังไม่มีการส่งคำตอบ</div>
+          </div>
+        </div>
+
+        <section class="analysis-insight-card glass-panel" aria-labelledby="student-dashboard-weakness-heading">
+          <div>
+            <p class="analysis-kicker">โฟกัสก่อน</p>
+            <h3 id="student-dashboard-weakness-heading">บทที่ควรเสริมมากที่สุด</h3>
+          </div>
+          <div id="student-dashboard-weakness-list" class="analysis-weakness-list" aria-live="polite"></div>
+        </section>
+
+        <section class="analysis-action-card glass-panel" aria-labelledby="student-dashboard-action-heading">
+          <div class="analysis-action-icon" aria-hidden="true">✓</div>
+          <div>
+            <p class="analysis-kicker">สิ่งที่ควรทำต่อ</p>
+            <h3 id="student-dashboard-action-heading">คำแนะนำจากคะแนนจริง</h3>
+            <p id="student-dashboard-next-action" class="analysis-next-action" aria-live="polite">รอข้อมูลการส่งคำตอบ</p>
+          </div>
+        </section>
+
+        <section class="analysis-topic-card glass-panel" aria-labelledby="student-dashboard-topic-heading">
+          <div class="analysis-section-heading">
+            <div>
+              <p class="analysis-kicker">คะแนนรายบท</p>
+              <h3 id="student-dashboard-topic-heading">ภาพรวมคะแนนตามบทเรียน</h3>
+            </div>
+            <p>เรียงคะแนนต่ำไปสูง</p>
+          </div>
+          <div id="student-dashboard-topic-list" class="analysis-topic-list" aria-live="polite"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- 4. FULL LEADERBOARD SECTION -->
     <section id="leaderboard-section" class="view-section">
       <div class="section-container glass-panel">
         <div class="section-header">
