@@ -9,6 +9,26 @@ let toastTimer = null;
 let lastFocusedElement = null;
 let confirmResolver = null;
 
+// Keep page navigation functional even when an older cached config.js is
+// loaded by the deployed site. All exam sets are served as page images.
+const EXAM_PAGE_COUNTS = Object.freeze({
+  1: 10,
+  2: 10,
+  3: 10,
+  4: 9,
+  5: 10,
+  6: 10,
+  7: 10,
+  8: 10,
+  9: 11,
+  10: 10
+});
+
+function getExamPageCount(setId) {
+  const configuredCount = Number(CONFIG.PAGES_CONFIG && CONFIG.PAGES_CONFIG[setId]);
+  return configuredCount > 0 ? configuredCount : EXAM_PAGE_COUNTS[setId] || 1;
+}
+
 // Re-exam active state
 let currentReExamSetId = null;
 let reExamStudentAnswers = Array(10).fill("");
@@ -136,7 +156,12 @@ const OFFLINE_MODE = {
     { set_id: 2, status: "open", start_time: "", end_time: "", answers: "2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3", release_answers: false },
     { set_id: 3, status: "closed", start_time: "", end_time: "", answers: "3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4", release_answers: false },
     { set_id: 4, status: "scheduled", start_time: "2026-07-04T08:00", end_time: "2026-07-04T12:00", answers: "4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1", release_answers: true },
-    { set_id: 5, status: "open", start_time: "", end_time: "", answers: "1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,1,1,1,1,2,2,2,2,3,3,3,3,4,4", release_answers: true }
+    { set_id: 5, status: "open", start_time: "", end_time: "", answers: "1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,1,1,1,1,2,2,2,2,3,3,3,3,4,4", release_answers: true },
+    { set_id: 6, status: "open", start_time: "", end_time: "", answers: "1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2", release_answers: false },
+    { set_id: 7, status: "open", start_time: "", end_time: "", answers: "1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2", release_answers: false },
+    { set_id: 8, status: "open", start_time: "", end_time: "", answers: "1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2", release_answers: false },
+    { set_id: 9, status: "open", start_time: "", end_time: "", answers: "1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2", release_answers: false },
+    { set_id: 10, status: "open", start_time: "", end_time: "", answers: "1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2", release_answers: false }
   ],
   submissions: [
     { id: "SUB_1", username: "student1", nickname: "น้องมีนา", set_id: 1, answers: "1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2,3,4,1,2", score: 30, submitted_at: "2026-07-03T10:00:00Z" },
@@ -452,6 +477,16 @@ function setupEventListeners() {
   document.getElementById("btn-pdf-next").addEventListener("click", () => changePdfPage(1));
   document.getElementById("btn-zoom-in").addEventListener("click", () => zoomPdf(0.2));
   document.getElementById("btn-zoom-out").addEventListener("click", () => zoomPdf(-0.2));
+  document.getElementById("btn-retry-pdf-page").addEventListener("click", updatePdfPageDisplay);
+  document.getElementById("pdf-page-image").addEventListener("load", () => {
+    document.getElementById("pdf-page-image").classList.remove("hidden");
+    document.getElementById("pdf-load-error").classList.add("hidden");
+  });
+  document.getElementById("pdf-page-image").addEventListener("error", () => {
+    document.getElementById("pdf-page-image").classList.add("hidden");
+    document.getElementById("pdf-load-error").classList.remove("hidden");
+    refreshIcons();
+  });
   document.getElementById("btn-mobile-exam-question").addEventListener("click", () => setMobileExamPane("question"));
   document.getElementById("btn-mobile-exam-answer").addEventListener("click", () => setMobileExamPane("answer"));
 
@@ -1157,24 +1192,19 @@ function launchExam(setId) {
 
 // Update PDF Image Display
 function updatePdfPageDisplay() {
-  const totalPages = CONFIG.PAGES_CONFIG[currentSetId];
+  const totalPages = getExamPageCount(currentSetId);
   document.getElementById("pdf-page-indicator").innerText = `หน้า ${currentPdfPage} / ${totalPages}`;
   
-  // ชุดที่ 1-5 ใช้ภาพที่แยกเป็นหน้า ส่วนชุดที่ 6-10 อ่านจาก PDF ต้นฉบับโดยตรง
+  // Images render consistently on GitHub Pages and mobile browsers, unlike an
+  // embedded PDF viewer whose support and toolbar behavior vary by browser.
   const imgElement = document.getElementById("pdf-page-image");
   const pdfElement = document.getElementById("pdf-page-document");
-  const usesSourcePdf = Number(currentSetId) >= 6;
-  imgElement.classList.toggle("hidden", usesSourcePdf);
-  pdfElement.classList.toggle("hidden", !usesSourcePdf);
-
-  if (usesSourcePdf) {
-    pdfElement.style.transform = `scale(${pdfZoomScale})`;
-    const sourcePage = CONFIG.PDF_SOURCE_START_PAGES[currentSetId] + currentPdfPage - 1;
-    pdfElement.src = `ข้อสอบ_โรงเรียนดัง_ติวเข้า_ม_1_เทอม_2 - Copy (6-10).pdf?v=${CONFIG.PDF_VERSION}#page=${sourcePage}&zoom=page-width`;
-  } else {
-    imgElement.style.transform = `scale(${pdfZoomScale})`;
-    imgElement.src = `images/set${currentSetId}/page_${currentPdfPage}.png`;
-  }
+  imgElement.classList.remove("hidden");
+  pdfElement.classList.add("hidden");
+  pdfElement.removeAttribute("src");
+  imgElement.style.transform = `scale(${pdfZoomScale})`;
+  imgElement.alt = `ข้อสอบชุดที่ ${currentSetId} หน้า ${currentPdfPage} จาก ${totalPages}`;
+  imgElement.src = `images/set${currentSetId}/page_${currentPdfPage}.png?v=${CONFIG.PDF_VERSION || "20260812"}`;
   
   // Enable / disable navigation buttons
   document.getElementById("btn-pdf-prev").disabled = (currentPdfPage <= 1);
@@ -1194,7 +1224,7 @@ function zoomPdf(factor) {
 
 // Change PDF Page
 function changePdfPage(dir) {
-  const totalPages = CONFIG.PAGES_CONFIG[currentSetId];
+  const totalPages = getExamPageCount(currentSetId);
   const target = currentPdfPage + dir;
   
   if (target >= 1 && target <= totalPages) {
@@ -2077,6 +2107,15 @@ function handleOfflineApi(action, data) {
     localStorage.setItem("mock_exams", JSON.stringify(OFFLINE_MODE.exams));
     localStorage.setItem("mock_submissions", JSON.stringify(OFFLINE_MODE.submissions));
   }
+  const storedMockExams = JSON.parse(localStorage.getItem("mock_exams") || "[]");
+  let addedMissingExam = false;
+  OFFLINE_MODE.exams.forEach(defaultExam => {
+    if (!storedMockExams.some(exam => String(exam.set_id) === String(defaultExam.set_id))) {
+      storedMockExams.push(defaultExam);
+      addedMissingExam = true;
+    }
+  });
+  if (addedMissingExam) localStorage.setItem("mock_exams", JSON.stringify(storedMockExams));
   if (!localStorage.getItem("mock_re_exams")) {
     localStorage.setItem("mock_re_exams", JSON.stringify([]));
   }
