@@ -7,15 +7,15 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260812-ui2">
   <!-- Lucide Icons -->
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.407.0/dist/umd/lucide.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.407.0/dist/umd/lucide.min.js"></script>
   <!-- KaTeX for math rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
 
@@ -27,23 +27,24 @@
   <header class="app-header">
     <div class="header-container">
       <!-- Left Logo Branding -->
-      <div class="logo" id="header-logo">
-        <img src="logo.png" alt="Logo" class="logo-img">
-      </div>
+      <button class="logo" id="header-logo" type="button" aria-label="กลับหน้าหลัก">
+        <img src="logo.png" alt="" class="logo-img" width="48" height="34">
+        <span class="brand-name">คลังข้อสอบ ม.1</span>
+      </button>
       
       <!-- Center Main Actions -->
       <div class="header-nav-center">
-        <button id="btn-show-leaderboard" class="btn btn-secondary hidden">
+        <button id="btn-show-leaderboard" class="btn btn-secondary hidden" aria-label="ดูอันดับคะแนน" title="อันดับคะแนน">
           <i data-lucide="award" class="icon-sm"></i>
-          <span class="btn-label">อันดับคะแนน (Leaderboard)</span>
+          <span class="btn-label">อันดับคะแนน</span>
         </button>
 
-        <button id="btn-show-student-dashboard" class="btn btn-secondary hidden">
+        <button id="btn-show-student-dashboard" class="btn btn-secondary hidden" aria-label="ดูผลคะแนนของฉัน" title="ผลคะแนนของฉัน">
           <i data-lucide="bar-chart-3" class="icon-sm"></i>
-          <span class="btn-label">ผลคะแนนของฉัน</span>
+          <span class="btn-label">ผลคะแนน</span>
         </button>
 
-        <button id="btn-show-admin" class="btn btn-secondary">
+        <button id="btn-show-admin" class="btn btn-secondary" aria-label="เปิดเมนูสำหรับคุณครู" title="สำหรับคุณครู">
           <i data-lucide="settings" class="icon-sm"></i>
           <span class="btn-label">สำหรับคุณครู</span>
         </button>
@@ -59,18 +60,33 @@
         </div>
         
         <!-- Premium Theme Switcher -->
-        <button id="btn-theme-toggle" class="btn btn-icon btn-secondary" title="สลับโหมดสว่าง/มืด">
+        <button id="btn-theme-toggle" class="btn btn-icon btn-secondary" title="สลับโหมดสว่าง/มืด" aria-label="เปิดโหมดมืด" aria-pressed="false">
           <i data-lucide="sun" class="theme-icon-light"></i>
           <i data-lucide="moon" class="theme-icon-dark hidden"></i>
         </button>
 
-        <button id="btn-logout" class="btn btn-danger hidden">
+        <button id="btn-logout" class="btn btn-danger hidden" aria-label="ออกจากระบบ">
           <i data-lucide="log-out" class="icon-sm"></i>
           <span class="btn-label">ออกจากระบบ</span>
         </button>
       </div>
     </div>
   </header>
+
+  <nav id="mobile-primary-nav" class="mobile-primary-nav hidden" aria-label="เมนูหลักสำหรับนักเรียน">
+    <button id="btn-mobile-portal" class="mobile-nav-item" type="button">
+      <i data-lucide="library" aria-hidden="true"></i>
+      <span>ข้อสอบ</span>
+    </button>
+    <button id="btn-mobile-leaderboard" class="mobile-nav-item" type="button">
+      <i data-lucide="award" aria-hidden="true"></i>
+      <span>อันดับ</span>
+    </button>
+    <button id="btn-mobile-dashboard" class="mobile-nav-item" type="button">
+      <i data-lucide="bar-chart-3" aria-hidden="true"></i>
+      <span>ผลคะแนน</span>
+    </button>
+  </nav>
 
   <!-- Main Content Wrapper -->
   <main class="app-body">
@@ -90,9 +106,9 @@
     <section id="auth-section" class="view-section active">
       <div class="auth-card glass-panel">
         
-        <div class="auth-tabs">
-          <button id="tab-login" class="auth-tab active">เข้าสู่ระบบ</button>
-          <button id="tab-register" class="auth-tab">ลงทะเบียนนักเรียนใหม่</button>
+        <div class="auth-tabs" role="tablist" aria-label="การเข้าใช้งานระบบ">
+          <button id="tab-login" class="auth-tab active" role="tab" aria-selected="true" aria-controls="form-login">เข้าสู่ระบบ</button>
+          <button id="tab-register" class="auth-tab" role="tab" aria-selected="false" aria-controls="form-register">ลงทะเบียนนักเรียนใหม่</button>
         </div>
 
         <!-- Login Form -->
@@ -107,14 +123,17 @@
           
           <div class="form-group">
             <label for="login-password">รหัสผ่าน (Password)</label>
-            <input type="password" id="login-password" placeholder="กรอกรหัสผ่าน" required autocomplete="current-password">
+            <div class="password-field">
+              <input type="password" id="login-password" placeholder="กรอกรหัสผ่าน" required autocomplete="current-password">
+              <button class="password-toggle" type="button" data-target="login-password" aria-label="แสดงรหัสผ่าน"><i data-lucide="eye" aria-hidden="true"></i></button>
+            </div>
           </div>
           
           <button type="submit" class="btn btn-primary btn-block">
             เข้าสู่ระบบ
             <span class="spinner hidden" id="login-spinner"></span>
           </button>
-          <div id="login-message" class="error-msg"></div>
+          <div id="login-message" class="error-msg" role="alert" aria-live="polite"></div>
         </form>
 
         <!-- Register Form -->
@@ -129,12 +148,18 @@
           
           <div class="form-group">
             <label for="register-password">รหัสผ่าน (Password)</label>
-            <input type="password" id="register-password" placeholder="ตั้งรหัสผ่านสำหรับการเข้าสอบ" required autocomplete="new-password">
+            <div class="password-field">
+              <input type="password" id="register-password" placeholder="ตั้งรหัสผ่านสำหรับการเข้าสอบ" required autocomplete="new-password">
+              <button class="password-toggle" type="button" data-target="register-password" aria-label="แสดงรหัสผ่าน"><i data-lucide="eye" aria-hidden="true"></i></button>
+            </div>
           </div>
 
           <div class="form-group">
             <label for="register-confirm-password">ยืนยันรหัสผ่าน (Confirm Password)</label>
-            <input type="password" id="register-confirm-password" placeholder="กรอกรหัสผ่านอีกครั้ง" required autocomplete="new-password">
+            <div class="password-field">
+              <input type="password" id="register-confirm-password" placeholder="กรอกรหัสผ่านอีกครั้ง" required autocomplete="new-password">
+              <button class="password-toggle" type="button" data-target="register-confirm-password" aria-label="แสดงรหัสผ่าน"><i data-lucide="eye" aria-hidden="true"></i></button>
+            </div>
           </div>
 
           <div class="form-group">
@@ -146,7 +171,7 @@
             ลงทะเบียนสร้างบัญชี
             <span class="spinner hidden" id="register-spinner"></span>
           </button>
-          <div id="register-message" class="error-msg"></div>
+          <div id="register-message" class="error-msg" role="alert" aria-live="polite"></div>
         </form>
       </div>
     </section>
@@ -263,7 +288,7 @@
         <div class="section-header">
           <h2 class="section-title">
             <i data-lucide="trophy" class="icon-lg" style="color:var(--secondary-color); margin-right:8px;"></i>
-            ตารางคะแนนและอันดับสูงสุดของห้องเรียน (Leaderboard)
+            ตารางคะแนนและอันดับห้องเรียน
           </h2>
           <button id="btn-leaderboard-back" class="btn btn-secondary">ย้อนกลับหน้าแรก</button>
         </div>
@@ -271,20 +296,16 @@
         <div class="table-responsive">
           <table class="data-table">
             <thead>
-              <tr>
-                <th style="width: 80px;">อันดับ</th>
-                <th>ชื่อเล่น</th>
-                <th style="text-align: center;">ชุดที่ 1</th>
-                <th style="text-align: center;">ชุดที่ 2</th>
-                <th style="text-align: center;">ชุดที่ 3</th>
-                <th style="text-align: center;">ชุดที่ 4</th>
-                <th style="text-align: center;">ชุดที่ 5</th>
-                <th style="text-align: center; font-weight: bold; color: var(--secondary-color);">คะแนนรวม</th>
+              <tr id="leaderboard-table-head-row">
+                <th scope="col" style="width: 80px;">อันดับ</th>
+                <th scope="col">ชื่อเล่น</th>
+                <th scope="col" style="text-align: center;">กำลังโหลดชุดข้อสอบ...</th>
+                <th scope="col" style="text-align: center; font-weight: bold;">คะแนนรวม</th>
               </tr>
             </thead>
             <tbody id="leaderboard-table-body">
               <tr>
-                <td colspan="8" style="text-align: center; padding: 30px;">กำลังโหลดตารางคะแนน...</td>
+                <td colspan="4" style="text-align: center; padding: 30px;">กำลังโหลดตารางคะแนน...</td>
               </tr>
             </tbody>
           </table>
@@ -294,6 +315,17 @@
 
     <!-- 4. EXAM WORKSPACE SECTION (SPLIT SCREEN) -->
     <section id="exam-workspace-section" class="view-section">
+      <div class="mobile-exam-toolbar" role="tablist" aria-label="สลับมุมมองข้อสอบ">
+        <button id="btn-mobile-exam-question" class="mobile-exam-tab active" type="button" role="tab" aria-selected="true">
+          <i data-lucide="file-search" aria-hidden="true"></i>
+          โจทย์
+        </button>
+        <button id="btn-mobile-exam-answer" class="mobile-exam-tab" type="button" role="tab" aria-selected="false">
+          <i data-lucide="list-checks" aria-hidden="true"></i>
+          กระดาษคำตอบ
+        </button>
+        <span id="mobile-answer-progress" class="mobile-answer-progress" aria-live="polite">ตอบแล้ว 0/30</span>
+      </div>
       <div class="workspace-container">
         
         <!-- Left Pane: PDF Viewer -->
@@ -304,21 +336,21 @@
             </div>
             
             <div class="pdf-controls">
-              <button id="btn-pdf-prev" class="btn-icon">
+              <button id="btn-pdf-prev" class="btn-icon" type="button" aria-label="ไปหน้าข้อสอบก่อนหน้า">
                 <i data-lucide="chevron-left"></i>
               </button>
               <span id="pdf-page-indicator" class="page-indicator">หน้า 1 / 10</span>
-              <button id="btn-pdf-next" class="btn-icon">
+              <button id="btn-pdf-next" class="btn-icon" type="button" aria-label="ไปหน้าข้อสอบถัดไป">
                 <i data-lucide="chevron-right"></i>
               </button>
               
               <div class="divider"></div>
               
-              <button id="btn-zoom-out" class="btn-icon" title="ย่อ">
+              <button id="btn-zoom-out" class="btn-icon" type="button" title="ย่อ" aria-label="ย่อข้อสอบ">
                 <i data-lucide="minus"></i>
               </button>
               <span id="zoom-indicator">100%</span>
-              <button id="btn-zoom-in" class="btn-icon" title="ขยาย">
+              <button id="btn-zoom-in" class="btn-icon" type="button" title="ขยาย" aria-label="ขยายข้อสอบ">
                 <i data-lucide="plus"></i>
               </button>
             </div>
@@ -354,6 +386,10 @@
           </div>
         </div>
 
+      </div>
+      <div class="mobile-exam-actionbar">
+        <span id="mobile-answer-progress-bottom">ตอบแล้ว 0/30</span>
+        <button id="btn-submit-exam-mobile" class="btn btn-primary" type="button">ส่งคำตอบ</button>
       </div>
     </section>
 
@@ -404,7 +440,10 @@
         
         <div class="form-group">
           <label for="admin-password">รหัสผ่านแอดมิน (Admin Password)</label>
-          <input type="password" id="admin-password" placeholder="กรอกรหัสผ่านคุณครู" required>
+          <div class="password-field">
+            <input type="password" id="admin-password" placeholder="กรอกรหัสผ่านคุณครู" required>
+            <button class="password-toggle" type="button" data-target="admin-password" aria-label="แสดงรหัสผ่าน"><i data-lucide="eye" aria-hidden="true"></i></button>
+          </div>
         </div>
         
         <button id="btn-admin-auth-submit" class="btn btn-primary btn-block">
@@ -421,17 +460,17 @@
         <div class="admin-header">
           <h2 class="section-title">
             <i data-lucide="sliders" class="icon-lg" style="color:var(--secondary-color); margin-right:8px;"></i>
-            แผงควบคุมระบบสำหรับคุณครู (Teacher Dashboard)
+            แผงควบคุมสำหรับคุณครู
           </h2>
           <button id="btn-admin-close" class="btn btn-secondary">ย้อนกลับหน้าแรก Portal</button>
         </div>
 
         <!-- Admin Tab Navigation -->
-        <div class="admin-tabs">
-          <button class="admin-tab active" data-tab="admin-tab-exams">ตั้งค่าเปิด-ปิดข้อสอบ & เฉลย</button>
-          <button class="admin-tab" data-tab="admin-tab-submissions">ดูผลคะแนนการส่งสอบ</button>
-        <button class="admin-tab" data-tab="admin-tab-analysis">วิเคราะห์คะแนนตามบทเรียน</button>
-          <button class="admin-tab" data-tab="admin-tab-students">รายชื่อนักเรียนในระบบ</button>
+        <div class="admin-tabs" role="tablist" aria-label="เมนูจัดการสำหรับคุณครู">
+          <button class="admin-tab active" role="tab" aria-selected="true" aria-controls="admin-tab-exams" data-tab="admin-tab-exams">ตั้งค่าเปิด-ปิดข้อสอบ & เฉลย</button>
+          <button class="admin-tab" role="tab" aria-selected="false" aria-controls="admin-tab-submissions" data-tab="admin-tab-submissions">ดูผลคะแนนการส่งสอบ</button>
+          <button class="admin-tab" role="tab" aria-selected="false" aria-controls="admin-tab-analysis" data-tab="admin-tab-analysis">วิเคราะห์คะแนนตามบทเรียน</button>
+          <button class="admin-tab" role="tab" aria-selected="false" aria-controls="admin-tab-students" data-tab="admin-tab-students">รายชื่อนักเรียนในระบบ</button>
         </div>
 
         <!-- TAB 1: EXAM SETTINGS -->
@@ -747,11 +786,11 @@
   </main>
 
   <!-- SETUP INSTRUCTIONS MODAL (MODERN BOX) -->
-  <div id="setup-instructions-modal" class="modal-overlay hidden">
-    <div class="modal-card glass-panel">
+  <div id="setup-instructions-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="setup-modal-title">
+    <div class="modal-card glass-panel" tabindex="-1">
       <div class="modal-header">
-        <h3>คู่มือการเชื่อมต่อฐานข้อมูล Google Sheets</h3>
-        <button id="btn-close-instructions" class="btn-close">&times;</button>
+        <h3 id="setup-modal-title">คู่มือการเชื่อมต่อฐานข้อมูล Google Sheets</h3>
+        <button id="btn-close-instructions" class="btn-close" type="button" aria-label="ปิดคู่มือ">&times;</button>
       </div>
       <div class="modal-body">
         <ol class="setup-steps">
@@ -792,8 +831,25 @@
     </div>
   </div>
 
+  <div id="app-toast" class="app-toast hidden" role="status" aria-live="polite" aria-atomic="true">
+    <i data-lucide="info" aria-hidden="true"></i>
+    <span id="app-toast-message"></span>
+  </div>
+
+  <div id="app-confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="app-confirm-title" aria-describedby="app-confirm-message">
+    <div class="confirm-card glass-panel" tabindex="-1">
+      <div class="confirm-icon" aria-hidden="true"><i data-lucide="circle-help"></i></div>
+      <h3 id="app-confirm-title">ยืนยันการทำรายการ</h3>
+      <p id="app-confirm-message"></p>
+      <div class="confirm-actions">
+        <button id="btn-confirm-cancel" class="btn btn-secondary" type="button">กลับไปตรวจสอบ</button>
+        <button id="btn-confirm-accept" class="btn btn-primary" type="button">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading Overlay for API calls -->
-  <div id="loading-overlay" class="loading-overlay hidden">
+  <div id="loading-overlay" class="loading-overlay hidden" role="status" aria-live="polite" aria-busy="true">
     <div class="loading-spinner-box">
       <div class="loading-spinner"></div>
       <div id="loading-text" class="loading-text">กำลังประมวลผล...</div>
@@ -803,7 +859,7 @@
   <!-- Configuration files -->
   <script src="config.js"></script>
   <!-- Client application logic -->
-  <script src="app.js?v=20260806"></script>
+  <script src="app.js?v=20260812-ui2"></script>
 
 </body>
 </html>

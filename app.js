@@ -5,6 +5,9 @@ let currentPdfPage = 1;
 let pdfZoomScale = 1.0;
 let studentAnswers = Array(30).fill(null);
 let studentDashboardData = null;
+let toastTimer = null;
+let lastFocusedElement = null;
+let confirmResolver = null;
 
 // Re-exam active state
 let currentReExamSetId = null;
@@ -143,22 +146,141 @@ const OFFLINE_MODE = {
 
 // Theme Initialization and Toggle
 function initTheme() {
-  const savedTheme = localStorage.getItem("exam_theme") || "light";
-  const toggleBtn = document.getElementById("btn-theme-toggle");
+  const savedTheme = localStorage.getItem("exam_theme");
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const isDark = savedTheme ? savedTheme === "dark" : prefersDark;
   
-  if (savedTheme === "dark") {
+  if (isDark) {
     document.documentElement.classList.add("dark");
-    if (toggleBtn) {
-      toggleBtn.querySelector(".theme-icon-light").classList.add("hidden");
-      toggleBtn.querySelector(".theme-icon-dark").classList.remove("hidden");
-    }
   } else {
     document.documentElement.classList.remove("dark");
-    if (toggleBtn) {
-      toggleBtn.querySelector(".theme-icon-light").classList.remove("hidden");
-      toggleBtn.querySelector(".theme-icon-dark").classList.add("hidden");
-    }
   }
+  updateThemeToggle(isDark);
+}
+
+function updateThemeToggle(isDark) {
+  const toggleBtn = document.getElementById("btn-theme-toggle");
+  if (!toggleBtn) return;
+  toggleBtn.querySelector(".theme-icon-light").classList.toggle("hidden", isDark);
+  toggleBtn.querySelector(".theme-icon-dark").classList.toggle("hidden", !isDark);
+  toggleBtn.setAttribute("aria-pressed", String(isDark));
+  toggleBtn.setAttribute("aria-label", isDark ? "เปิดโหมดสว่าง" : "เปิดโหมดมืด");
+  toggleBtn.title = isDark ? "เปิดโหมดสว่าง" : "เปิดโหมดมืด";
+}
+
+function updateAuthChrome() {
+  const isLoggedIn = Boolean(currentUser);
+  document.body.classList.toggle("has-user-session", isLoggedIn);
+  const mobileNav = document.getElementById("mobile-primary-nav");
+  if (mobileNav) mobileNav.classList.toggle("hidden", !isLoggedIn);
+  updateStudentDashboardButton();
+}
+
+function updateMobileNavigation(sectionId) {
+  const sectionToButton = {
+    "portal-section": "btn-mobile-portal",
+    "leaderboard-section": "btn-mobile-leaderboard",
+    "student-dashboard-section": "btn-mobile-dashboard"
+  };
+  document.querySelectorAll(".mobile-nav-item").forEach(button => {
+    const isActive = button.id === sectionToButton[sectionId];
+    button.classList.toggle("active", isActive);
+    if (isActive) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+}
+
+function setAuthTab(tabName) {
+  const isLogin = tabName === "login";
+  const loginTab = document.getElementById("tab-login");
+  const registerTab = document.getElementById("tab-register");
+  loginTab.classList.toggle("active", isLogin);
+  registerTab.classList.toggle("active", !isLogin);
+  loginTab.setAttribute("aria-selected", String(isLogin));
+  registerTab.setAttribute("aria-selected", String(!isLogin));
+  document.getElementById("form-login").classList.toggle("active", isLogin);
+  document.getElementById("form-register").classList.toggle("active", !isLogin);
+}
+
+function showNotice(message, type = "info") {
+  const toast = document.getElementById("app-toast");
+  const messageElement = document.getElementById("app-toast-message");
+  if (!toast || !messageElement) return;
+  messageElement.textContent = message;
+  toast.className = `app-toast ${type}`;
+  toast.classList.remove("hidden");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.add("hidden"), 5000);
+  refreshIcons();
+}
+
+function showConfirm(message) {
+  const modal = document.getElementById("app-confirm-modal");
+  document.getElementById("app-confirm-message").textContent = message;
+  lastFocusedElement = document.activeElement;
+  modal.classList.remove("hidden");
+  document.getElementById("btn-confirm-cancel").focus();
+  return new Promise(resolve => {
+    confirmResolver = resolve;
+  });
+}
+
+function closeConfirm(result) {
+  const modal = document.getElementById("app-confirm-modal");
+  modal.classList.add("hidden");
+  if (confirmResolver) {
+    const resolve = confirmResolver;
+    confirmResolver = null;
+    resolve(result);
+  }
+  if (lastFocusedElement && typeof lastFocusedElement.focus === "function") lastFocusedElement.focus();
+}
+
+function openSetupModal() {
+  const modal = document.getElementById("setup-instructions-modal");
+  lastFocusedElement = document.activeElement;
+  modal.classList.remove("hidden");
+  modal.querySelector(".modal-card").focus();
+}
+
+function closeSetupModal() {
+  document.getElementById("setup-instructions-modal").classList.add("hidden");
+  if (lastFocusedElement && typeof lastFocusedElement.focus === "function") lastFocusedElement.focus();
+}
+
+function trapModalFocus(event, modal) {
+  if (event.key !== "Tab" || modal.classList.contains("hidden")) return;
+  const focusable = [...modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter(element => !element.disabled && element.offsetParent !== null);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function setMobileExamPane(pane) {
+  const showAnswers = pane === "answer";
+  const workspace = document.querySelector(".workspace-container");
+  workspace.classList.toggle("mobile-answer-active", showAnswers);
+  const questionTab = document.getElementById("btn-mobile-exam-question");
+  const answerTab = document.getElementById("btn-mobile-exam-answer");
+  questionTab.classList.toggle("active", !showAnswers);
+  answerTab.classList.toggle("active", showAnswers);
+  questionTab.setAttribute("aria-selected", String(!showAnswers));
+  answerTab.setAttribute("aria-selected", String(showAnswers));
+}
+
+function updateAnswerProgress() {
+  const answeredCount = studentAnswers.filter(answer => answer !== null).length;
+  const text = `ตอบแล้ว ${answeredCount}/30`;
+  document.getElementById("mobile-answer-progress").textContent = text;
+  document.getElementById("mobile-answer-progress-bottom").textContent = text;
 }
 
 // Refresh Lucide Icons on Dynamic Render
@@ -171,10 +293,12 @@ function refreshIcons() {
 // Check if configuration URL is missing
 function checkConfig() {
   const banner = document.getElementById("config-alert-banner");
-  if (!CONFIG.API_URL || CONFIG.API_URL.trim() === "") {
+  const isLocalHost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+  const forceLocalDemo = isLocalHost && new URLSearchParams(window.location.search).get("offline") === "1";
+  if (forceLocalDemo || !CONFIG.API_URL || CONFIG.API_URL.trim() === "") {
     OFFLINE_MODE.active = true;
-    banner.classList.remove("hidden");
-    console.warn("⚠️ API_URL is empty. Running in OFFLINE DEMO MODE with mock data.");
+    banner.classList.toggle("hidden", forceLocalDemo);
+    console.info("Running in local demo mode with mock data.");
   } else {
     OFFLINE_MODE.active = false;
     banner.classList.add("hidden");
@@ -199,7 +323,12 @@ function showSection(sectionId) {
   const target = document.getElementById(sectionId);
   if (target) {
     target.classList.add("active");
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.body.classList.toggle("exam-mode", sectionId === "exam-workspace-section");
+    updateMobileNavigation(sectionId);
+    window.scrollTo({ top: 0, behavior: "auto" });
+    const focusTarget = target.querySelector("h1, h2") || target;
+    focusTarget.setAttribute("tabindex", "-1");
+    window.requestAnimationFrame(() => focusTarget.focus({ preventScroll: true }));
   }
 }
 
@@ -221,17 +350,7 @@ function setupEventListeners() {
     toggleBtn.addEventListener("click", () => {
       const isDark = document.documentElement.classList.toggle("dark");
       localStorage.setItem("exam_theme", isDark ? "dark" : "light");
-      
-      const lightIcon = toggleBtn.querySelector(".theme-icon-light");
-      const darkIcon = toggleBtn.querySelector(".theme-icon-dark");
-      
-      if (isDark) {
-        lightIcon.classList.add("hidden");
-        darkIcon.classList.remove("hidden");
-      } else {
-        lightIcon.classList.remove("hidden");
-        darkIcon.classList.add("hidden");
-      }
+      updateThemeToggle(isDark);
     });
   }
 
@@ -247,28 +366,49 @@ function setupEventListeners() {
 
   // Auth Tabs switching
   document.getElementById("tab-login").addEventListener("click", () => {
-    document.getElementById("tab-login").classList.add("active");
-    document.getElementById("tab-register").classList.remove("active");
-    document.getElementById("form-login").classList.add("active");
-    document.getElementById("form-register").classList.remove("active");
+    setAuthTab("login");
   });
-
+  
   document.getElementById("tab-register").addEventListener("click", () => {
-    document.getElementById("tab-register").classList.add("active");
-    document.getElementById("tab-login").classList.remove("active");
-    document.getElementById("form-register").classList.add("active");
-    document.getElementById("form-login").classList.remove("active");
+    setAuthTab("register");
+  });
+  document.querySelectorAll(".password-toggle").forEach(button => {
+    button.addEventListener("click", () => {
+      const input = document.getElementById(button.dataset.target);
+      const shouldShow = input.type === "password";
+      input.type = shouldShow ? "text" : "password";
+      button.setAttribute("aria-label", shouldShow ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน");
+      button.innerHTML = `<i data-lucide="${shouldShow ? "eye-off" : "eye"}" aria-hidden="true"></i>`;
+      refreshIcons();
+    });
   });
 
   // Setup Instructions Modal
   document.getElementById("btn-show-setup-instructions").addEventListener("click", () => {
-    document.getElementById("setup-instructions-modal").classList.remove("hidden");
+    openSetupModal();
   });
   document.getElementById("btn-close-instructions").addEventListener("click", () => {
-    document.getElementById("setup-instructions-modal").classList.add("hidden");
+    closeSetupModal();
   });
   document.getElementById("btn-setup-modal-close").addEventListener("click", () => {
-    document.getElementById("setup-instructions-modal").classList.add("hidden");
+    closeSetupModal();
+  });
+  document.getElementById("setup-instructions-modal").addEventListener("click", event => {
+    if (event.target.id === "setup-instructions-modal") closeSetupModal();
+  });
+  document.getElementById("btn-confirm-cancel").addEventListener("click", () => closeConfirm(false));
+  document.getElementById("btn-confirm-accept").addEventListener("click", () => closeConfirm(true));
+  document.getElementById("app-confirm-modal").addEventListener("click", event => {
+    if (event.target.id === "app-confirm-modal") closeConfirm(false);
+  });
+  document.addEventListener("keydown", event => {
+    const confirmModal = document.getElementById("app-confirm-modal");
+    const setupModal = document.getElementById("setup-instructions-modal");
+    trapModalFocus(event, confirmModal);
+    trapModalFocus(event, setupModal);
+    if (event.key !== "Escape") return;
+    if (!confirmModal.classList.contains("hidden")) closeConfirm(false);
+    else if (!setupModal.classList.contains("hidden")) closeSetupModal();
   });
 
   // Form submits
@@ -297,15 +437,27 @@ function setupEventListeners() {
     showSection("leaderboard-section");
     loadLeaderboard(false);
   });
+  document.getElementById("btn-mobile-portal").addEventListener("click", () => {
+    showSection("portal-section");
+    loadPortal();
+  });
+  document.getElementById("btn-mobile-leaderboard").addEventListener("click", () => {
+    showSection("leaderboard-section");
+    loadLeaderboard(false);
+  });
+  document.getElementById("btn-mobile-dashboard").addEventListener("click", openStudentDashboard);
 
   // PDF Page controls
   document.getElementById("btn-pdf-prev").addEventListener("click", () => changePdfPage(-1));
   document.getElementById("btn-pdf-next").addEventListener("click", () => changePdfPage(1));
   document.getElementById("btn-zoom-in").addEventListener("click", () => zoomPdf(0.2));
   document.getElementById("btn-zoom-out").addEventListener("click", () => zoomPdf(-0.2));
+  document.getElementById("btn-mobile-exam-question").addEventListener("click", () => setMobileExamPane("question"));
+  document.getElementById("btn-mobile-exam-answer").addEventListener("click", () => setMobileExamPane("answer"));
 
   // Submit Exam
   document.getElementById("btn-submit-exam").addEventListener("click", submitAnswersForm);
+  document.getElementById("btn-submit-exam-mobile").addEventListener("click", submitAnswersForm);
   document.getElementById("btn-result-portal").addEventListener("click", () => {
     showSection("portal-section");
     loadPortal();
@@ -336,10 +488,14 @@ function setupEventListeners() {
   // Admin Tab Navigation
   document.querySelectorAll(".admin-tab").forEach(tab => {
     tab.addEventListener("click", (e) => {
-      document.querySelectorAll(".admin-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".admin-tab").forEach(t => {
+        t.classList.remove("active");
+        t.setAttribute("aria-selected", "false");
+      });
       document.querySelectorAll(".admin-tab-content").forEach(c => c.classList.remove("active"));
       
       tab.classList.add("active");
+      tab.setAttribute("aria-selected", "true");
       const targetId = tab.getAttribute("data-tab");
       document.getElementById(targetId).classList.add("active");
       
@@ -449,9 +605,13 @@ async function apiCall(action, data = {}) {
 }
 
 function updateStudentDashboardButton() {
-  const button = document.getElementById("btn-show-student-dashboard");
-  if (!button) return;
-  button.classList.toggle("hidden", !currentUser || currentUser.role !== "student");
+  const shouldHide = !currentUser || currentUser.role !== "student";
+  const desktopButton = document.getElementById("btn-show-student-dashboard");
+  const mobileButton = document.getElementById("btn-mobile-dashboard");
+  if (desktopButton) desktopButton.classList.toggle("hidden", shouldHide);
+  if (mobileButton) mobileButton.classList.toggle("hidden", shouldHide);
+  const mobileNav = document.getElementById("mobile-primary-nav");
+  if (mobileNav) mobileNav.style.gridTemplateColumns = shouldHide ? "repeat(2, 1fr)" : "repeat(3, 1fr)";
 }
 
 // Check logged in user from LocalStorage
@@ -475,10 +635,11 @@ function checkLoginStatus() {
     document.getElementById("user-info-area").classList.remove("hidden");
     document.getElementById("btn-logout").classList.remove("hidden");
     document.getElementById("btn-show-leaderboard").classList.remove("hidden");
-    updateStudentDashboardButton();
+    updateAuthChrome();
     showSection("portal-section");
     loadPortal();
   } else {
+    updateAuthChrome();
     showSection("auth-section");
   }
 }
@@ -504,7 +665,7 @@ async function handleLogin(e) {
     document.getElementById("user-info-area").classList.remove("hidden");
     document.getElementById("btn-logout").classList.remove("hidden");
     document.getElementById("btn-show-leaderboard").classList.remove("hidden");
-    updateStudentDashboardButton();
+    updateAuthChrome();
     
     showSection("portal-section");
     loadPortal();
@@ -544,7 +705,7 @@ async function handleRegister(e) {
   
   if (res.success) {
     // Show success message then switch to login tab
-    alert("ลงทะเบียนผู้ใช้งานสำเร็จ! สามารถเข้าสู่ระบบได้ทันที");
+    showNotice("ลงทะเบียนสำเร็จ สามารถเข้าสู่ระบบได้ทันที", "success");
     document.getElementById("form-register").reset();
     document.getElementById("tab-login").click();
   } else {
@@ -559,7 +720,7 @@ function handleLogout() {
   document.getElementById("user-info-area").classList.add("hidden");
   document.getElementById("btn-logout").classList.add("hidden");
   document.getElementById("btn-show-leaderboard").classList.add("hidden");
-  updateStudentDashboardButton();
+  updateAuthChrome();
   showSection("auth-section");
 }
 
@@ -570,7 +731,7 @@ async function openStudentDashboard() {
   const res = await apiCall("getStudentDashboard");
   hideLoading();
   if (!res.success) {
-    alert(res.message || "ไม่สามารถโหลดแดชบอร์ดคะแนนได้");
+    showNotice(res.message || "ไม่สามารถโหลดแดชบอร์ดคะแนนได้", "error");
     showSection("portal-section");
     return;
   }
@@ -726,6 +887,8 @@ function generateWorkspaceAnswerSheet() {
       const q = parseInt(e.target.getAttribute("data-q"));
       const val = parseInt(e.target.value);
       studentAnswers[q - 1] = val;
+      document.getElementById(`answer-row-q${q}`).classList.add("is-answered");
+      updateAnswerProgress();
     });
   });
 
@@ -737,10 +900,13 @@ function generateWorkspaceAnswerSheet() {
       const radios = document.getElementsByName(`q${q}`);
       radios.forEach(r => r.checked = false);
       studentAnswers[q - 1] = null;
+      document.getElementById(`answer-row-q${q}`).classList.remove("is-answered");
+      updateAnswerProgress();
     });
   });
   
   refreshIcons();
+  updateAnswerProgress();
 }
 
 // Load Portal Data (Available Exams and Leaderboard Sidebar)
@@ -750,7 +916,7 @@ async function loadPortal() {
   hideLoading();
   
   if (!res.success) {
-    alert("ไม่สามารถโหลดข้อสอบได้: " + res.message);
+    showNotice("ไม่สามารถโหลดข้อสอบได้: " + res.message, "error");
     return;
   }
   
@@ -911,22 +1077,30 @@ async function loadLeaderboard(mini = true) {
     }
   } else {
     // Render Full Table
+    const totalSets = Number(CONFIG.TOTAL_SETS) || 10;
+    const headRow = document.getElementById("leaderboard-table-head-row");
+    headRow.innerHTML = `
+      <th scope="col" style="width:80px;">อันดับ</th>
+      <th scope="col">ชื่อเล่น</th>
+      ${Array.from({ length: totalSets }, (_, index) => `<th scope="col" style="text-align:center;">ชุดที่ ${index + 1}</th>`).join("")}
+      <th scope="col" style="text-align:center; font-weight:800;">คะแนนรวม</th>
+    `;
     const tbody = document.getElementById("leaderboard-table-body");
     tbody.innerHTML = "";
     
     if (list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px; color:var(--text-secondary);">ยังไม่มีนักเรียนส่งคะแนนในระบบ</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${totalSets + 3}" style="text-align:center; padding:30px; color:var(--text-secondary);">ยังไม่มีนักเรียนส่งคะแนนในระบบ</td></tr>`;
       return;
     }
     
     list.forEach((item, index) => {
       const tr = document.createElement("tr");
       
-      const s1 = item.sets["1"] !== undefined ? item.sets["1"] : "-";
-      const s2 = item.sets["2"] !== undefined ? item.sets["2"] : "-";
-      const s3 = item.sets["3"] !== undefined ? item.sets["3"] : "-";
-      const s4 = item.sets["4"] !== undefined ? item.sets["4"] : "-";
-      const s5 = item.sets["5"] !== undefined ? item.sets["5"] : "-";
+      const setCells = Array.from({ length: totalSets }, (_, setIndex) => {
+        const setId = String(setIndex + 1);
+        const score = item.sets[setId] !== undefined ? item.sets[setId] : "-";
+        return `<td style="text-align:center;">${score}</td>`;
+      }).join("");
       
       let rankText = index + 1;
       let rowClass = "";
@@ -947,11 +1121,7 @@ async function loadLeaderboard(mini = true) {
           ${getAvatarHtml(item.nickname)}
           <span class="student-nickname">${escapeHtml(item.nickname)} ${reBadgeHtml}</span>
         </td>
-        <td style="text-align: center;">${s1}</td>
-        <td style="text-align: center;">${s2}</td>
-        <td style="text-align: center;">${s3}</td>
-        <td style="text-align: center;">${s4}</td>
-        <td style="text-align: center;">${s5}</td>
+        ${setCells}
         <td style="text-align: center; font-weight: bold; color: var(--primary-color); font-size: 16px;">${item.totalScore}</td>
       `;
       tbody.appendChild(tr);
@@ -965,14 +1135,18 @@ async function loadLeaderboard(mini = true) {
 function launchExam(setId) {
   currentSetId = setId;
   currentPdfPage = 1;
-  pdfZoomScale = 1.0;
+  pdfZoomScale = window.matchMedia && window.matchMedia("(max-width: 640px)").matches ? 1.2 : 1.0;
   studentAnswers = Array(30).fill(null);
   
   // Reset all radio checkboxes in answer sheet HTML
   document.querySelectorAll('#answer-sheet-form input[type="radio"]').forEach(r => r.checked = false);
+  document.querySelectorAll(".answer-row").forEach(row => row.classList.remove("is-answered"));
   
   // Update UI Elements
   document.getElementById("exam-set-title-workspace").innerText = `ข้อสอบชุดที่ ${setId}`;
+  document.getElementById("zoom-indicator").innerText = `${Math.round(pdfZoomScale * 100)}%`;
+  setMobileExamPane("question");
+  updateAnswerProgress();
   
   // Render workspace
   showSection("exam-workspace-section");
@@ -1034,10 +1208,10 @@ async function submitAnswersForm() {
   const unfilledCount = studentAnswers.filter(a => a === null).length;
   
   if (unfilledCount > 0) {
-    const confirmSubmit = confirm(`คุณยังไม่ได้ตอบคำถามอีก ${unfilledCount} ข้อ ต้องการส่งคำตอบเลยหรือไม่?`);
+    const confirmSubmit = await showConfirm(`คุณยังไม่ได้ตอบคำถามอีก ${unfilledCount} ข้อ ต้องการส่งคำตอบเลยหรือไม่?`);
     if (!confirmSubmit) return;
   } else {
-    const confirmSubmit = confirm("คุณตรวจสอบคำตอบดีแล้ว และต้องการส่งกระดาษคำตอบใช่หรือไม่?");
+    const confirmSubmit = await showConfirm("คุณตรวจสอบคำตอบดีแล้ว และต้องการส่งกระดาษคำตอบใช่หรือไม่?");
     if (!confirmSubmit) return;
   }
   
@@ -1125,7 +1299,7 @@ async function submitAnswersForm() {
     refreshIcons();
     showSection("result-section");
   } else {
-    alert("เกิดข้อผิดพลาดในการส่งคำตอบ: " + res.message);
+    showNotice("เกิดข้อผิดพลาดในการส่งคำตอบ: " + res.message, "error");
   }
 }
 
@@ -1138,7 +1312,7 @@ async function loadReExamRoom() {
   hideLoading();
   
   if (!res.success) {
-    alert("ไม่สามารถโหลดข้อมูลห้องสอบซ่อมได้: " + res.message);
+    showNotice("ไม่สามารถโหลดข้อมูลห้องสอบซ่อมได้: " + res.message, "error");
     return;
   }
   
@@ -1324,7 +1498,7 @@ function checkQuestionAnswer(idx) {
     const num = numInput.value.trim();
     const den = denInput.value.trim();
     if (!num || !den) {
-      alert("กรุณากรอกเศษส่วนให้ครบถ้วน");
+      showNotice("กรุณากรอกเศษส่วนให้ครบถ้วน", "error");
       if (!num) numInput.focus();
       else denInput.focus();
       return;
@@ -1333,7 +1507,7 @@ function checkQuestionAnswer(idx) {
   } else if (input) {
     value = input.value.trim();
     if (!value) {
-      alert("กรุณากรอกคำตอบ");
+      showNotice("กรุณากรอกคำตอบ", "error");
       input.focus();
       return;
     }
@@ -1406,11 +1580,11 @@ function checkQuestionAnswer(idx) {
 // Submit Re-exam results
 async function submitReExamAnswers() {
   if (reExamStudentAnswers.includes("")) {
-    alert("กรุณาตอบคำถามให้ถูกต้องครบทุกข้อก่อนส่ง");
+    showNotice("กรุณาตอบคำถามให้ถูกต้องครบทุกข้อก่อนส่ง", "error");
     return;
   }
   
-  const confirmSubmit = confirm("คุณได้ตอบคำถามถูกต้องครบถ้วนแล้ว ต้องการส่งกระดาษคำตอบซ่อมเพื่อล้างสถานะหรือไม่?");
+  const confirmSubmit = await showConfirm("คุณได้ตอบคำถามถูกต้องครบถ้วนแล้ว ต้องการส่งกระดาษคำตอบซ่อมเพื่อล้างสถานะหรือไม่?");
   if (!confirmSubmit) return;
   
   const spinner = document.getElementById("re-exam-submit-spinner");
@@ -1431,11 +1605,11 @@ async function submitReExamAnswers() {
   document.getElementById("btn-submit-re-exam").disabled = false;
   
   if (res.success && res.data.passed) {
-    alert("ยินดีด้วย! คุณสอบซ่อมชุดที่ " + currentReExamSetId + " ผ่านเรียบร้อยแล้วและระบบได้ทำการเคลียร์สถานะติดซ่อมแล้ว!");
+    showNotice("ยินดีด้วย! คุณสอบซ่อมชุดที่ " + currentReExamSetId + " ผ่านเรียบร้อยแล้ว", "success");
     showSection("portal-section");
     loadPortal();
   } else {
-    alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + (res.message || "คะแนนสอบซ่อมไม่ตรงตามเกณฑ์"));
+    showNotice("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + (res.message || "คะแนนสอบซ่อมไม่ตรงตามเกณฑ์"), "error");
   }
 }
 
@@ -1448,6 +1622,7 @@ function openTeacherPanel() {
     showSection("teacher-admin-section");
     document.getElementById("admin-auth-panel").classList.add("hidden");
     document.getElementById("admin-dashboard-panel").classList.remove("hidden");
+    updateAuthChrome();
     fetchAdminAllData();
   } else {
     // Show login popup
@@ -1486,6 +1661,8 @@ async function handleAdminAuth() {
     
     document.getElementById("admin-auth-panel").classList.add("hidden");
     document.getElementById("admin-dashboard-panel").classList.remove("hidden");
+    updateAuthChrome();
+    showSection("teacher-admin-section");
     
     // Store data locally to display
     adminAllData = res.data;
@@ -1517,7 +1694,7 @@ async function fetchAdminAllData() {
     adminAllData = res.data;
     renderAdminDashboard();
   } else {
-    alert("ไม่สามารถดึงข้อมูลสำหรับครูได้: " + res.message);
+    showNotice("ไม่สามารถดึงข้อมูลสำหรับครูได้: " + res.message, "error");
   }
 }
 
@@ -1624,7 +1801,7 @@ function renderAdminDashboard() {
     } else if (choice === "3") {
       newStatus = "none";
     } else {
-      alert("ตัวเลือกไม่ถูกต้อง");
+      showNotice("ตัวเลือกไม่ถูกต้อง", "error");
       return;
     }
     
@@ -1638,10 +1815,10 @@ function renderAdminDashboard() {
     hideLoading();
     
     if (res.success) {
-      alert(res.message);
+      showNotice(res.message, "success");
       fetchAdminAllData();
     } else {
-      alert("ล้มเหลว: " + res.message);
+      showNotice("ล้มเหลว: " + res.message, "error");
     }
   };
 
@@ -1865,7 +2042,7 @@ function filterAdminSubmissions() {
 // Download CSV for submissions
 function exportSubmissionsCSV() {
   if (!adminAllData || adminAllData.submissions.length === 0) {
-    alert("ไม่มีข้อมูลที่จะส่งออก");
+    showNotice("ไม่มีข้อมูลที่จะส่งออก", "error");
     return;
   }
   
