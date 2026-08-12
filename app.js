@@ -1077,7 +1077,9 @@ async function loadLeaderboard(mini = true) {
     }
   } else {
     // Render Full Table
-    const totalSets = Number(CONFIG.TOTAL_SETS) || 10;
+    // The published course contains 10 sets. Keep all columns visible even if
+    // an older cached config still reports only the original five sets.
+    const totalSets = Math.max(10, Number(CONFIG.TOTAL_SETS) || 0);
     const headRow = document.getElementById("leaderboard-table-head-row");
     headRow.innerHTML = `
       <th scope="col" style="width:80px;">อันดับ</th>
