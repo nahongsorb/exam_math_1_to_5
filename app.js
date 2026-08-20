@@ -199,6 +199,7 @@ function updateAuthChrome() {
   const mobileNav = document.getElementById("mobile-primary-nav");
   if (mobileNav) mobileNav.classList.toggle("hidden", !isLoggedIn);
   updateStudentDashboardButton();
+  if (typeof updateGameAccess === "function") updateGameAccess();
 }
 
 function updateMobileNavigation(sectionId) {
@@ -206,6 +207,7 @@ function updateMobileNavigation(sectionId) {
     "portal-section": "btn-mobile-portal",
     "leaderboard-section": "btn-mobile-leaderboard",
     "student-dashboard-section": "btn-mobile-dashboard"
+    ,"game-section": "btn-mobile-game"
   };
   document.querySelectorAll(".mobile-nav-item").forEach(button => {
     const isActive = button.id === sectionToButton[sectionId];
@@ -536,6 +538,8 @@ function setupEventListeners() {
       
       if (targetId === "admin-tab-analysis") {
         renderWrongAnswersAnalysis();
+      } else if (targetId === "admin-tab-game" && typeof loadGameAdminData === "function") {
+        loadGameAdminData();
       }
     });
   });
@@ -603,6 +607,9 @@ function setupEventListeners() {
 // Call Apps Script POST API
 async function apiCall(action, data = {}) {
   if (OFFLINE_MODE.active) {
+    if (/Game/.test(action) && typeof handleOfflineGameApi === "function") {
+      return handleOfflineGameApi(action, data);
+    }
     return handleOfflineApi(action, data);
   }
 
@@ -1263,6 +1270,15 @@ async function submitAnswersForm() {
   
   if (res.success) {
     const result = res.data;
+    if (result.weekly_game_reward) {
+      if (result.weekly_game_reward.granted) {
+        const reward = result.weekly_game_reward.reward || {};
+        const rewardText = Object.keys(reward).filter(key => Number(reward[key]) > 0).map(key => `${key} +${Number(reward[key]).toLocaleString("th-TH")}`).join(" · ");
+        showNotice(`🎮 ได้รับรางวัลประจำสัปดาห์: ${rewardText}`, "success");
+      } else if (result.weekly_game_reward.reason === "ALREADY_CLAIMED") {
+        showNotice("🎮 รางวัลเกมของข้อสอบชุดนี้เคยได้รับแล้ว จึงไม่แจกซ้ำ", "info");
+      }
+    }
     
     // Save score locally
     const savedScores = JSON.parse(localStorage.getItem(`scores_${currentUser.username}`)) || {};

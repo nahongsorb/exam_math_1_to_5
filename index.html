@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=20260812-ui4">
+  <link rel="stylesheet" href="styles.css?v=20260820-game1">
   <!-- Lucide Icons -->
   <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.407.0/dist/umd/lucide.min.js"></script>
   <!-- KaTeX for math rendering -->
@@ -42,6 +42,11 @@
         <button id="btn-show-student-dashboard" class="btn btn-secondary hidden" aria-label="ดูผลคะแนนของฉัน" title="ผลคะแนนของฉัน">
           <i data-lucide="bar-chart-3" class="icon-sm"></i>
           <span class="btn-label">ผลคะแนน</span>
+        </button>
+
+        <button id="btn-show-game" class="btn btn-secondary hidden" aria-label="เปิดหมู่บ้านของฉัน" title="หมู่บ้านของฉัน">
+          <i data-lucide="castle" class="icon-sm"></i>
+          <span class="btn-label">หมู่บ้าน</span>
         </button>
 
         <button id="btn-show-admin" class="btn btn-secondary" aria-label="เปิดเมนูสำหรับคุณครู" title="สำหรับคุณครู">
@@ -85,6 +90,10 @@
     <button id="btn-mobile-dashboard" class="mobile-nav-item" type="button">
       <i data-lucide="bar-chart-3" aria-hidden="true"></i>
       <span>ผลคะแนน</span>
+    </button>
+    <button id="btn-mobile-game" class="mobile-nav-item hidden" type="button">
+      <i data-lucide="castle" aria-hidden="true"></i>
+      <span>หมู่บ้าน</span>
     </button>
   </nav>
 
@@ -197,6 +206,12 @@
         <h1 class="page-title">คลังข้อสอบ ติวเข้า ม.1 เทอม 2</h1>
         <p class="page-subtitle">เลือกชุดข้อสอบที่คุณครูเปิดให้ทดสอบเพื่อเริ่มทำคะแนน</p>
       </div>
+
+      <button id="btn-portal-game" class="game-portal-banner hidden" type="button">
+        <span class="game-portal-icon" aria-hidden="true">🏡</span>
+        <span><strong>หมู่บ้านของฉัน</strong><small>นำรางวัลจากคะแนนไปสร้างฐาน วางแผนกองทัพ และบุกเพื่อน</small></span>
+        <i data-lucide="arrow-right" aria-hidden="true"></i>
+      </button>
 
       <div class="portal-grid">
         <!-- Exam set cards will be generated dynamically here -->
@@ -431,6 +446,37 @@
       </div>
     </section>
 
+    <!-- BASE GAME -->
+    <section id="game-section" class="view-section">
+      <div class="game-shell">
+        <header class="game-header glass-panel">
+          <div>
+            <p class="game-kicker">BASE GAME</p>
+            <h1>🏡 หมู่บ้านของฉัน</h1>
+            <p id="game-status-line">กำลังโหลดข้อมูลฐาน...</p>
+          </div>
+          <button id="btn-game-back" class="btn btn-secondary" type="button">กลับหน้าข้อสอบ</button>
+        </header>
+
+        <div id="game-resource-bar" class="game-resource-bar" aria-live="polite"></div>
+
+        <nav class="game-tabs" aria-label="เมนูเกม">
+          <button class="game-tab active" data-game-tab="base" type="button">🏠 ฐาน</button>
+          <button class="game-tab" data-game-tab="army" type="button">🪖 กองทัพ</button>
+          <button class="game-tab" data-game-tab="attack" type="button">⚔️ บุกเพื่อน</button>
+          <button class="game-tab" data-game-tab="history" type="button">📜 ประวัติ</button>
+          <button class="game-tab" data-game-tab="ranking" type="button">🏆 อันดับสงคราม</button>
+        </nav>
+
+        <div id="game-feedback" class="game-feedback hidden" role="status" aria-live="polite"></div>
+        <div id="game-base-panel" class="game-panel active"></div>
+        <div id="game-army-panel" class="game-panel"></div>
+        <div id="game-attack-panel" class="game-panel"></div>
+        <div id="game-history-panel" class="game-panel"></div>
+        <div id="game-ranking-panel" class="game-panel"></div>
+      </div>
+    </section>
+
     <!-- 6. TEACHER ADMIN SECTION -->
     <section id="teacher-admin-section" class="view-section">
       
@@ -477,6 +523,7 @@
           <button class="admin-tab" role="tab" aria-selected="false" aria-controls="admin-tab-submissions" data-tab="admin-tab-submissions">ดูผลคะแนนการส่งสอบ</button>
           <button class="admin-tab" role="tab" aria-selected="false" aria-controls="admin-tab-analysis" data-tab="admin-tab-analysis">วิเคราะห์คะแนนตามบทเรียน</button>
           <button class="admin-tab" role="tab" aria-selected="false" aria-controls="admin-tab-students" data-tab="admin-tab-students">รายชื่อนักเรียนในระบบ</button>
+          <button class="admin-tab" role="tab" aria-selected="false" aria-controls="admin-tab-game" data-tab="admin-tab-game">🎮 จัดการเกม</button>
         </div>
 
         <!-- TAB 1: EXAM SETTINGS -->
@@ -742,6 +789,23 @@
           </div>
         </div>
 
+        <div id="admin-tab-game" class="admin-tab-content">
+          <div class="game-admin-toolbar glass-panel">
+            <div>
+              <h3>🎮 Game Management</h3>
+              <p id="game-admin-status">กำลังรอโหลดข้อมูลเกม</p>
+            </div>
+            <label class="game-switch"><input id="game-enabled-toggle" type="checkbox"><span>เปิดระบบเกม</span></label>
+            <button id="btn-refresh-game-admin" class="btn btn-secondary" type="button">โหลดข้อมูลใหม่</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead><tr><th>ผู้เล่น</th><th>บ้าน</th><th>Trophy</th><th>ทรัพยากร</th><th>ใช้งานล่าสุด</th><th>จัดการ</th></tr></thead>
+              <tbody id="game-admin-players"><tr><td colspan="6">ยังไม่มีข้อมูลผู้เล่นเกม</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
     </section>
@@ -863,9 +927,10 @@
   </div>
 
   <!-- Configuration files -->
-  <script src="config.js?v=20260812-data2"></script>
+  <script src="config.js?v=20260820-game1"></script>
   <!-- Client application logic -->
-  <script src="app.js?v=20260812-ui4"></script>
+  <script src="app.js?v=20260820-game1"></script>
+  <script src="game.js?v=20260820-game1"></script>
 
 </body>
 </html>
