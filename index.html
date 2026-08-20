@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=20260820-game1">
+  <link rel="stylesheet" href="styles.css?v=20260820-village1">
   <!-- Lucide Icons -->
   <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.407.0/dist/umd/lucide.min.js"></script>
   <!-- KaTeX for math rendering -->
@@ -460,21 +460,30 @@
 
         <div id="game-resource-bar" class="game-resource-bar" aria-live="polite"></div>
 
-        <nav class="game-tabs" aria-label="เมนูเกม">
-          <button class="game-tab active" data-game-tab="base" type="button">🏠 ฐาน</button>
-          <button class="game-tab" data-game-tab="army" type="button">🪖 กองทัพ</button>
-          <button class="game-tab" data-game-tab="attack" type="button">⚔️ บุกเพื่อน</button>
-          <button class="game-tab" data-game-tab="history" type="button">📜 ประวัติ</button>
-          <button class="game-tab" data-game-tab="ranking" type="button">🏆 อันดับสงคราม</button>
-        </nav>
+        <div class="game-navigation-row">
+          <nav class="game-tabs game-primary-tabs" aria-label="พื้นที่หมู่บ้าน">
+            <button class="game-tab game-primary-tab active" data-game-tab="village" type="button"><span aria-hidden="true">🏘️</span> หมู่บ้านรวม</button>
+            <button class="game-tab game-primary-tab" data-game-tab="home" type="button"><span aria-hidden="true">🏡</span> บ้านของฉัน</button>
+            <button class="game-tab game-primary-tab" data-game-tab="build" type="button"><span aria-hidden="true">🔨</span> ก่อสร้าง</button>
+          </nav>
+          <nav class="game-tabs game-secondary-tabs" aria-label="ระบบเกมเพิ่มเติม">
+            <button class="game-tab game-secondary-tab" data-game-tab="army" type="button">🪖 กองทัพ</button>
+            <button class="game-tab game-secondary-tab" data-game-tab="attack" type="button">⚔️ บุกเพื่อน</button>
+            <button class="game-tab game-secondary-tab" data-game-tab="history" type="button">📜 ประวัติ</button>
+            <button class="game-tab game-secondary-tab" data-game-tab="ranking" type="button">🏆 อันดับ</button>
+          </nav>
+        </div>
 
         <div id="game-feedback" class="game-feedback hidden" role="status" aria-live="polite"></div>
-        <div id="game-base-panel" class="game-panel active"></div>
+        <div id="game-village-panel" class="game-panel active"></div>
+        <div id="game-home-panel" class="game-panel"></div>
+        <div id="game-build-panel" class="game-panel"></div>
         <div id="game-army-panel" class="game-panel"></div>
         <div id="game-attack-panel" class="game-panel"></div>
         <div id="game-history-panel" class="game-panel"></div>
         <div id="game-ranking-panel" class="game-panel"></div>
       </div>
+
     </section>
 
     <!-- 6. TEACHER ADMIN SECTION -->
@@ -855,6 +864,14 @@
 
   </main>
 
+  <!-- PLAYER BASE PREVIEW MODAL -->
+  <div id="game-player-preview-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="game-player-preview-title">
+    <div class="game-player-preview glass-panel" tabindex="-1">
+      <button id="btn-close-game-player-preview" class="btn-close" type="button" aria-label="ปิดข้อมูลบ้านเพื่อน">&times;</button>
+      <div id="game-player-preview-content"></div>
+    </div>
+  </div>
+
   <!-- SETUP INSTRUCTIONS MODAL (MODERN BOX) -->
   <div id="setup-instructions-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="setup-modal-title">
     <div class="modal-card glass-panel" tabindex="-1">
@@ -930,7 +947,7 @@
   <script src="config.js?v=20260820-game1"></script>
   <!-- Client application logic -->
   <script src="app.js?v=20260820-game1"></script>
-  <script src="game.js?v=20260820-game1"></script>
+  <script src="game.js?v=20260820-village1"></script>
 
 </body>
 </html>
