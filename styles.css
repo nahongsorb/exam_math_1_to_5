@@ -3255,6 +3255,11 @@ body {
 .village-house-art { display: block; margin: 2px auto 4px; aspect-ratio: 720 / 420; overflow: hidden; }
 .village-player-name { display: block; font-size: 15px; font-weight: 800; }
 .village-player-meta { display: block; margin-top: 3px; color: rgba(22, 55, 38, .75); font-size: 11px; }
+.village-army-summary { min-height: 24px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px; margin: 5px 0 2px; }
+.village-army-summary > span { display: inline-flex; align-items: center; gap: 2px; min-height: 21px; padding: 2px 6px; border: 1px solid rgba(255,255,255,.42); border-radius: 999px; background: rgba(20, 57, 38, .7); color: #fff; font-size: 11px; line-height: 1; box-shadow: 0 3px 8px rgba(20,57,38,.13); }
+.village-army-label { display: inline-grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; background: rgba(20,57,38,.82); font-style: normal; font-size: 11px; }
+.village-army-summary b { color: #ffe17a; font-size: 10px; }
+.village-army-empty { color: rgba(22,55,38,.65); font-size: 10px; }
 .village-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 18px 0 4px; }
 .village-pagination span { color: var(--text-secondary); font-size: 13px; font-weight: 700; }
 
@@ -3272,6 +3277,35 @@ body {
 .player-base-svg .base-building-label.muted { fill: rgba(255,255,255,.88); }
 .player-base-svg .base-building { cursor: pointer; transform-box: fill-box; transform-origin: center; transition: filter .2s ease; }
 .player-base-svg .base-building:hover { filter: brightness(1.09); }
+.player-base-svg .base-tier-treatment { pointer-events: none; }
+.player-base-svg .base-tier-foundation { stroke-width: 3; }
+.player-base-svg .base-tier-ring { fill: none; stroke-width: 3; stroke-dasharray: 6 4; }
+.player-base-svg .base-tier-treatment.tier-1 .base-tier-foundation { fill: rgba(104,75,47,.2); stroke: #916942; }
+.player-base-svg .base-tier-treatment.tier-2 .base-tier-foundation { fill: rgba(109,126,105,.24); stroke: #81907d; }
+.player-base-svg .base-tier-treatment.tier-2 .base-tier-ring { stroke: #d8e0d4; }
+.player-base-svg .base-tier-treatment.tier-3 .base-tier-foundation { fill: rgba(54,123,169,.2); stroke: #3d91c6; }
+.player-base-svg .base-tier-treatment.tier-3 .base-tier-ring { stroke: #9ee3ff; }
+.player-base-svg .base-tier-treatment.tier-4 .base-tier-foundation { fill: rgba(246,196,83,.22); stroke: #d39b24; }
+.player-base-svg .base-tier-treatment.tier-4 .base-tier-ring { stroke: #ffe7a0; }
+.player-base-svg .base-tier-treatment.tier-5 .base-tier-foundation { fill: rgba(106,74,190,.25); stroke: #6d4bd2; stroke-width: 5; }
+.player-base-svg .base-tier-treatment.tier-5 .base-tier-ring { stroke: #ffe47b; stroke-width: 4; }
+.player-base-svg .base-tier-flags path:first-child { fill: none; stroke: #6c4a31; stroke-width: 3; }
+.player-base-svg .base-tier-flags path:last-child { fill: #4ca4d2; stroke: #235979; stroke-width: 2; }
+.player-base-svg .tier-4 .base-tier-flags path:last-child { fill: #f6c453; stroke: #8a651d; }
+.player-base-svg .tier-5 .base-tier-flags path:last-child { fill: #7a5ce0; stroke: #3c277a; }
+.player-base-svg .base-tier-crest circle { fill: #f6c453; stroke: #8a651d; stroke-width: 3; }
+.player-base-svg .base-tier-crest path { fill: #fff1a9; stroke: #8a651d; stroke-width: 1.5; }
+.player-base-svg .base-tier-crest text { fill: #5b4219; font: 900 13px var(--font-family); paint-order: stroke; stroke: #fff2b2; stroke-width: 2px; }
+.player-base-svg .tier-5 .base-tier-crest circle { fill: #704fd1; stroke: #ffd85b; }
+.player-base-svg .tier-5 .base-tier-crest path { fill: #ffe36f; stroke: #4b328d; }
+.player-base-svg .tier-5 .base-tier-crest text { fill: #fff; stroke: #513696; }
+.player-base-svg .base-tier-sparkles path { fill: #fff3a2; stroke: #ad7c18; stroke-width: 1.5; }
+.player-base-svg .base-army-ground { fill: rgba(17, 48, 34, .82); stroke: rgba(255,255,255,.62); stroke-width: 2; }
+.player-base-svg .base-army-unit rect { fill: rgba(255,255,255,.13); stroke: rgba(255,255,255,.3); stroke-width: 1.5; }
+.player-base-svg .base-army-title { fill: #fff; font: 900 14px var(--font-family); }
+.player-base-svg .base-army-level { fill: #bfe2c9; font: 700 10px var(--font-family); }
+.player-base-svg .base-army-icon { font: 23px "Segoe UI Emoji", "Apple Color Emoji", sans-serif; }
+.player-base-svg .base-army-count { fill: #ffe17a; font: 900 14px var(--font-family); }
 .player-base-svg .construction-label { fill: #fff4da; font: 800 12px var(--font-family); paint-order: stroke; stroke: #8e551b; stroke-width: 3px; }
 .player-base-svg .base-construction-hud rect { fill: rgba(118, 67, 18, .88); stroke: #f3b45d; stroke-width: 2; }
 .player-base-svg .base-construction-hud text { fill: #fff5df; font: 800 14px var(--font-family); }
@@ -3312,7 +3346,15 @@ body {
 .build-category-heading h2 { margin: 0; font-size: 17px; }
 .build-category-heading span { color: var(--text-secondary); font-size: 12px; }
 .compact-building-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.compact-building-card { min-width: 0; padding: 14px; border: 1px solid var(--panel-border); border-radius: 18px; background: var(--card-bg); transition: border-color .2s ease, transform .2s ease; }
+.compact-building-card { --tier-color: var(--panel-border); --tier-soft: transparent; position: relative; min-width: 0; padding: 14px; border: 1px solid var(--tier-color); border-radius: 18px; background: linear-gradient(120deg, var(--tier-soft), var(--card-bg) 46%); box-shadow: inset 4px 0 0 var(--tier-color); transition: border-color .2s ease, transform .2s ease; }
+.compact-building-card.building-tier-0 { --tier-color: #778087; --tier-soft: rgba(119,128,135,.08); }
+.compact-building-card.building-tier-1 { --tier-color: #9a7048; --tier-soft: rgba(154,112,72,.1); }
+.compact-building-card.building-tier-2 { --tier-color: #689463; --tier-soft: rgba(104,148,99,.12); }
+.compact-building-card.building-tier-3 { --tier-color: #3d91c6; --tier-soft: rgba(61,145,198,.14); }
+.compact-building-card.building-tier-4 { --tier-color: #d39b24; --tier-soft: rgba(246,196,83,.17); }
+.compact-building-card.building-tier-5 { --tier-color: #7554d4; --tier-soft: rgba(117,84,212,.18); box-shadow: inset 4px 0 0 #7554d4, 0 0 0 1px rgba(255,216,91,.34); }
+.compact-building-card[class*="building-tier-"] .compact-building-icon { border: 1px solid color-mix(in srgb, var(--tier-color) 60%, transparent); background: var(--tier-soft); }
+.compact-building-card[class*="building-tier-"] .game-level { border: 1px solid var(--tier-color); background: var(--tier-soft); color: var(--tier-color); }
 .compact-building-card:hover { border-color: var(--card-hover-border); transform: translateY(-1px); }
 .compact-building-card.is-constructing { border-color: rgba(223,139,37,.45); background: linear-gradient(130deg, var(--warning-glow), var(--card-bg)); }
 .compact-building-card.is-locked { opacity: .68; }
@@ -3340,6 +3382,15 @@ body {
 .preview-building-levels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
 .preview-building-levels span { display: flex; justify-content: space-between; gap: 8px; padding: 9px 10px; border-radius: 11px; background: var(--btn-secondary-bg); color: var(--text-secondary); font-size: 11px; }
 .preview-building-levels strong { color: var(--text-primary); }
+.preview-army-roster { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; padding: 10px 12px; border: 1px solid var(--panel-border); border-radius: 15px; background: var(--btn-secondary-bg); }
+.preview-army-roster > strong { font-size: 12px; }
+.preview-army-roster .village-army-summary { justify-content: flex-end; margin: 0; }
+.preview-building-levels .building-level-chip { border: 1px solid transparent; }
+.preview-building-levels .building-level-chip.tier-1 { border-color: rgba(154,112,72,.45); background: rgba(154,112,72,.1); }
+.preview-building-levels .building-level-chip.tier-2 { border-color: rgba(104,148,99,.5); background: rgba(104,148,99,.11); }
+.preview-building-levels .building-level-chip.tier-3 { border-color: rgba(61,145,198,.5); background: rgba(61,145,198,.12); }
+.preview-building-levels .building-level-chip.tier-4 { border-color: rgba(211,155,36,.55); background: rgba(246,196,83,.14); }
+.preview-building-levels .building-level-chip.tier-5 { border-color: rgba(117,84,212,.55); background: rgba(117,84,212,.14); }
 .preview-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; }
 .game-target-card.is-highlighted { outline: 3px solid var(--primary-color); outline-offset: 3px; }
 

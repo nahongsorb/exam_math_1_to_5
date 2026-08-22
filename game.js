@@ -120,15 +120,68 @@ function visualProfile(profile) {
 }
 
 function buildingAppearance(level) {
-  const safeLevel = Math.max(0, Number(level) || 0);
+  const safeLevel = Math.max(1, Math.min(5, Number(level) || 1));
+  const palettes = [null,
+    { roof: "#8b5a3c", wall: "#c99862", accent: "#78a7c8" },
+    { roof: "#b86246", wall: "#d8ad73", accent: "#65a96f" },
+    { roof: "#426f9f", wall: "#d8d6cb", accent: "#55b8dc" },
+    { roof: "#6552d9", wall: "#eee4cf", accent: "#f6c453" },
+    { roof: "#34245f", wall: "#f2ead9", accent: "#ffd86a" }
+  ];
+  const palette = palettes[safeLevel];
   return {
-    scale: 0.88 + Math.min(5, safeLevel) * 0.035,
-    roof: safeLevel >= 4 ? "#6552d9" : safeLevel >= 2 ? "#d05252" : "#8b5a3c",
-    wall: safeLevel >= 3 ? "#e7dcc8" : "#c99862",
-    accent: safeLevel >= 4 ? "#f6c453" : "#68a4d8",
+    tier: safeLevel,
+    scale: [0, .82, .91, 1.01, 1.1, 1.2][safeLevel],
+    roof: palette.roof,
+    wall: palette.wall,
+    accent: palette.accent,
     detail: safeLevel >= 2,
-    elite: safeLevel >= 4
+    elite: safeLevel >= 4,
+    royal: safeLevel >= 5
   };
+}
+
+function renderBuildingTierSvg(level, key) {
+  const tier = Math.max(1, Math.min(5, Number(level) || 1));
+  const isWall = key === "wall", rx = isWall ? 176 : 44 + tier * 5, ry = isWall ? 34 : 15 + tier * 2;
+  const flagX = isWall ? 126 : 47, flagY = isWall ? -26 : -39;
+  const crestY = isWall ? -42 : -69;
+  return `<g class="base-tier-treatment tier-${tier}">
+    <ellipse cx="0" cy="${isWall ? 30 : 31}" rx="${rx}" ry="${ry}" class="base-tier-foundation"/>
+    ${tier >= 2 ? `<ellipse cx="0" cy="${isWall ? 28 : 29}" rx="${rx - 7}" ry="${Math.max(11, ry - 5)}" class="base-tier-ring"/>` : ""}
+    ${tier >= 3 ? `<g class="base-tier-flags"><path d="M-${flagX} ${flagY + 23} V${flagY} M${flagX} ${flagY + 23} V${flagY}"/><path d="M-${flagX} ${flagY} h24 l-6 10 6 10 h-24 Z M${flagX} ${flagY} h-24 l6 10 -6 10 h24 Z"/></g>` : ""}
+    ${tier >= 4 ? `<g class="base-tier-crest" transform="translate(0 ${crestY})"><circle r="15"/><path d="M-8 -3 L-3 3 L0 -7 L4 3 L9 -3 L7 7 H-7 Z"/><text y="23" text-anchor="middle">${tier}</text></g>` : ""}
+    ${tier >= 5 ? `<g class="base-tier-sparkles"><path d="M-70 -58 l4 9 9 4 -9 4 -4 9 -4-9 -9-4 9-4 Z M69 -49 l3 7 7 3 -7 3 -3 7 -3-7 -7-3 7-3 Z"/></g>` : ""}
+  </g>`;
+}
+
+function gameArmyEntries(units) {
+  const source = units || {};
+  return ["infantry", "archer", "cavalry", "ram", "catapult"].map(key => {
+    const config = gameCatalog && gameCatalog.units && gameCatalog.units[key];
+    return { key, count: Math.max(0, Number(source[key] || 0)), icon: config ? config.icon : "🪖", name: config ? config.name : key };
+  }).filter(item => item.count > 0);
+}
+
+function renderArmyParade(units, compact) {
+  if (!compact) return "";
+  const entries = gameArmyEntries(units);
+  if (!entries.length) return "";
+  const armyLevel = Math.max(1, Number((units || {}).armyLevel || 1));
+  const itemWidth = 66, gap = 7, labelWidth = 88;
+  const width = labelWidth + entries.length * itemWidth + Math.max(0, entries.length - 1) * gap + 18;
+  const x = 360 - width / 2;
+  const roster = entries.map((item, index) => `<g class="base-army-unit" transform="translate(${x + labelWidth + index * (itemWidth + gap)} 351)">
+    <rect width="${itemWidth}" height="43" rx="14"/><text x="20" y="29" text-anchor="middle" class="base-army-icon">${escapeHtml(item.icon)}</text><text x="47" y="27" text-anchor="middle" class="base-army-count">×${formatGameNumber(item.count)}</text>
+  </g>`).join("");
+  const description = entries.map(item => `${item.name} ${item.count}`).join(", ");
+  return `<g class="base-army-parade" role="group" aria-label="กองทัพ ${escapeHtml(description)}"><rect x="${x}" y="342" width="${width}" height="61" rx="25" class="base-army-ground"/><text x="${x + 18}" y="365" class="base-army-title">🪖 กองทัพ</text><text x="${x + 18}" y="387" class="base-army-level">เทคโนโลยี Lv.${armyLevel}</text>${roster}</g>`;
+}
+
+function renderArmySummary(units) {
+  const entries = gameArmyEntries(units);
+  if (!entries.length) return `<span class="village-army-empty">ยังไม่มีกองทัพ</span>`;
+  return entries.map(item => `<span title="${escapeHtml(item.name)}">${escapeHtml(item.icon)}<b>${formatGameNumber(item.count)}</b></span>`).join("");
 }
 
 function renderEmptyBuildingSlot(key, x, y, compact, constructing = false) {
@@ -171,7 +224,7 @@ function renderBuildingSvg(key, level, x, y, options = {}) {
   const construction = options.constructing ? (key === "wall" ? `<g class="construction-scaffold"><rect x="-166" y="-32" width="96" height="70" rx="8" fill="rgba(226,146,54,.13)" stroke="#e29236" stroke-width="3" stroke-dasharray="8 5"/><rect x="70" y="-32" width="96" height="70" rx="8" fill="rgba(226,146,54,.13)" stroke="#e29236" stroke-width="3" stroke-dasharray="8 5"/></g>` : `<g class="construction-scaffold"><rect x="-70" y="-76" width="140" height="116" rx="8" fill="rgba(226,146,54,.13)" stroke="#e29236" stroke-width="3" stroke-dasharray="8 5"/><path d="M-58 28 L-33 -68 M-12 34 L8 -70 M35 30 L58 -63" stroke="#e29236" stroke-width="4"/><text x="0" y="58" text-anchor="middle" class="construction-label">🔨 กำลังก่อสร้าง</text></g>`) : "";
   const interaction = compact ? "" : `data-base-building="${key}" role="button" tabindex="0" aria-label="${escapeHtml(name)} ระดับ ${level}"`;
   const labelX = key === "wall" ? -119 : 0;
-  return `<g class="base-building is-built level-${level}${options.constructing ? " is-constructing" : ""}" ${interaction} transform="translate(${x} ${y}) scale(${s})">${art}${construction}${compact ? "" : `<rect x="${labelX - 43}" y="48" width="86" height="22" rx="11" class="base-level-pill"/><text x="${labelX}" y="63" text-anchor="middle" class="base-building-level">${escapeHtml(name)} · Lv.${level}</text>`}</g>`;
+  return `<g class="base-building is-built level-${level} tier-${look.tier}${options.constructing ? " is-constructing" : ""}" ${interaction} transform="translate(${x} ${y}) scale(${s})">${renderBuildingTierSvg(level, key)}${art}${construction}${compact ? "" : `<rect x="${labelX - 43}" y="48" width="86" height="22" rx="11" class="base-level-pill"/><text x="${labelX}" y="63" text-anchor="middle" class="base-building-level">${escapeHtml(name)} · Lv.${level}</text>`}</g>`;
 }
 
 function renderBaseScene(profile, options = {}) {
@@ -191,6 +244,7 @@ function renderBaseScene(profile, options = {}) {
     <path d="M360 430 C344 330 348 270 360 205" class="base-path"/>
     <g class="base-scenery"><circle cx="58" cy="62" r="26"/><circle cx="82" cy="45" r="22"/><rect x="66" y="65" width="10" height="34" rx="4"/><circle cx="656" cy="320" r="27"/><circle cx="625" cy="334" r="20"/><rect x="639" y="341" width="10" height="34" rx="4"/></g>
     <g filter="url(#shadow-${prefix})">${wall}${buildingKeys.map(key => renderBuildingSvg(key, Number(p.buildings[key] || 0), positions[key][0], positions[key][1], { compact, constructing: upgradeKey === key })).join("")}</g>
+    ${renderArmyParade(p.units, compact)}
     ${p.upgrade ? `<g class="base-construction-hud"><rect x="247" y="14" width="226" height="38" rx="19"/><text x="360" y="39" text-anchor="middle" data-finish-at="${p.upgrade.finishAt}">🔨 ${formatGameDuration(p.upgrade.finishAt - Date.now())}</text></g>` : ""}
   </svg>`;
 }
@@ -229,6 +283,7 @@ function renderVillageOverview() {
     <span class="village-plot-badge">${player.is_current_player ? "บ้านของฉัน" : `🏆 ${formatGameNumber(player.trophy)}`}</span>
     <span class="village-house-art">${renderBaseScene(player, { compact: true, prefix: `plot-${villagePage}-${index}` })}</span>
     <span class="village-player-name">${escapeHtml(player.nickname)}</span>
+    <span class="village-army-summary" aria-label="สรุปกองทัพ"><i class="village-army-label">🪖</i>${renderArmySummary(player.units)}</span>
     <span class="village-player-meta">บ้าน Lv.${player.house_level} · 🛡 ${formatGameNumber(player.defense_power || calculateClientDefense(player))}</span>
   </button>`).join("");
   panel.innerHTML = `<section class="village-overview" aria-labelledby="village-overview-title">
@@ -246,7 +301,8 @@ function openPlayerBasePreview(username) {
   const normalizedPlayer = visualProfile(player), b = normalizedPlayer.buildings, isCurrent = player.is_current_player;
   document.getElementById("game-player-preview-content").innerHTML = `<div class="preview-player-heading"><div><p class="game-kicker">${isCurrent ? "YOUR BASE" : "PLAYER BASE"}</p><h2 id="game-player-preview-title">${escapeHtml(player.nickname)}</h2><p>บ้าน Lv.${player.house_level} · 🏆 ${formatGameNumber(player.trophy)} · 🛡 ${formatGameNumber(player.defense_power || calculateClientDefense(player))}</p></div>${isCurrent ? `<span class="current-player-tag">บ้านของฉัน</span>` : ""}</div>
     <div class="preview-base-scene">${renderBaseScene(normalizedPlayer, { prefix: `preview-${player.username}` })}</div>
-    <div class="preview-building-levels">${["mainHouse", "wall", "archerTower", "fortress", "storage", "vault", "barracks", "blacksmith"].map(key => `<span>${escapeHtml(gameCatalog.buildings[key].name)} <strong>Lv.${Number(b[key] || 0)}</strong></span>`).join("")}</div>
+    <div class="preview-army-roster"><strong>🪖 กองทัพประจำฐาน</strong><span class="village-army-summary">${renderArmySummary(player.units)}</span></div>
+    <div class="preview-building-levels">${["mainHouse", "wall", "archerTower", "fortress", "storage", "vault", "barracks", "blacksmith"].map(key => { const level = Number(b[key] || 0); return `<span class="building-level-chip tier-${Math.max(0, Math.min(5, level))}">${escapeHtml(gameCatalog.buildings[key].name)} <strong>Lv.${level}</strong></span>`; }).join("")}</div>
     <div class="preview-actions"><button class="btn btn-secondary" id="btn-preview-close-action" type="button">ปิด</button><button class="btn ${isCurrent ? "btn-primary" : "btn-danger"}" id="btn-preview-primary-action" type="button">${isCurrent ? "🏡 ไปบ้านของฉัน" : "⚔️ ไปหน้าบุกโจมตี"}</button></div>`;
   playerPreviewTrigger = document.activeElement;
   const modal = document.getElementById("game-player-preview-modal"); modal.classList.remove("hidden");
@@ -298,7 +354,7 @@ function renderGameBuild() {
   const panel = document.getElementById("game-build-panel");
   const groups = BUILDING_GROUPS.map(group => `<section class="build-category"><div class="build-category-heading"><h2>${group.title}</h2><span>${group.keys.length} รายการ</span></div><div class="compact-building-grid">${group.keys.map(key => renderBuildingCard(key, gameCatalog.buildings[key])).join("")}</div></section>`).join("");
   const cementCard = `<article class="compact-building-card production-card"><div class="compact-building-head"><div class="compact-building-icon">🏗️</div><div><h3>ผลิต Cement</h3><p>Sand 100 + Coins 100 → Cement 10</p></div><span class="game-level">ผลิต</span></div><div class="compact-building-bottom"><div class="game-unit-controls"><input id="game-cement-batches" class="form-control" type="number" min="1" max="100" value="1" aria-label="จำนวนรอบการผลิต Cement"><button id="btn-convert-cement" class="btn btn-primary btn-compact" type="button">ผลิต</button></div></div></article>`;
-  panel.innerHTML = `<div class="build-page-heading"><div><p class="game-kicker">BUILD & UPGRADE</p><h2>ก่อสร้างและพัฒนาฐาน</h2><p>เลือกอาคารเพื่อใช้ทรัพยากร ข้อมูลราคาและเวลามาจากระบบเกมเดิม</p></div>${gameState.upgrade ? `<div class="build-queue-chip">🔨 1 งานกำลังดำเนินการ</div>` : `<div class="build-queue-chip ready">✓ คิวก่อสร้างว่าง</div>`}</div>${groups}<section class="build-category"><div class="build-category-heading"><h2>🏭 การผลิต</h2><span>แปรรูปทรัพยากร</span></div><div class="compact-building-grid">${cementCard}</div></section>`;
+  panel.innerHTML = `<div class="build-page-heading"><div><p class="game-kicker">BUILD & UPGRADE</p><h2>ก่อสร้างและพัฒนาฐาน</h2><p>เลือกอาคารเพื่อใช้ทรัพยากร เวลาก่อสร้างปรับใหม่เหลือ 20% ของเดิม</p></div>${gameState.upgrade ? `<div class="build-queue-chip">🔨 1 งานกำลังดำเนินการ</div>` : `<div class="build-queue-chip ready">✓ คิวก่อสร้างว่าง</div>`}</div>${groups}<section class="build-category"><div class="build-category-heading"><h2>🏭 การผลิต</h2><span>แปรรูปทรัพยากร</span></div><div class="compact-building-grid">${cementCard}</div></section>`;
   panel.querySelectorAll("[data-upgrade-building]").forEach(button => button.addEventListener("click", () => startBuildingUpgrade(button.dataset.upgradeBuilding)));
   document.getElementById("btn-convert-cement").addEventListener("click", convertCement);
 }
@@ -313,7 +369,7 @@ function renderBuildingCard(key, config) {
   if (config.unitCapacity) stats.push(`กองทัพ +${formatGameNumber(config.unitCapacity[level] || 0)}`);
   const disabled = maxed || Boolean(gameState.upgrade) || lockedByHouse;
   const action = maxed ? "สูงสุดแล้ว" : isThisUpgrade ? "กำลังก่อสร้าง" : lockedByHouse ? `ต้องมีบ้าน Lv.${next}` : `อัปเกรด Lv.${next}`;
-  return `<article class="compact-building-card${isThisUpgrade ? " is-constructing" : ""}${lockedByHouse ? " is-locked" : ""}" data-building-card="${key}">
+  return `<article class="compact-building-card building-tier-${Math.max(0, Math.min(5, level))}${isThisUpgrade ? " is-constructing" : ""}${lockedByHouse ? " is-locked" : ""}" data-building-card="${key}">
     <div class="compact-building-head"><div class="compact-building-icon">${config.icon}</div><div><h3>${escapeHtml(config.name)}</h3><p>${stats.join(" · ")}</p></div><span class="game-level">Lv.${level}</span></div>
     <div class="compact-building-bottom"><div>${cost ? renderGameCost(cost) : `<span class="max-level-text">✓ ระดับสูงสุด</span>`}${cost ? `<span class="compact-build-time" title="เวลาก่อสร้าง">⏱ ${formatGameDuration(Number(config.times[next] || 0) * 1000)}</span>` : ""}</div>
       <button class="btn ${isThisUpgrade ? "btn-warning" : "btn-primary"} btn-compact" type="button" data-upgrade-building="${key}" ${disabled ? "disabled" : ""}>${action}</button></div>
@@ -579,14 +635,17 @@ async function adminResetGame(username) {
 function offlineGameCatalog() {
   const building = (name, icon, defense, extra = {}) => ({ name, icon, defense: [0, defense, defense * 2, defense * 3, defense * 4, defense * 5],
     costs: [null, { wood: 50, coins: 100 }, { wood: 100, stone: 50, coins: 200 }, { wood: 160, stone: 100, brick: 50, coins: 350 }, { wood: 240, stone: 180, brick: 100, coins: 550 }, { wood: 350, stone: 260, cement: 40, coins: 800 }],
-    times: [0, 30, 60, 120, 300, 600], ...extra });
+    times: [0, 60, 180, 540, 1440, 3600], ...extra });
   return {
     buildings: {
-      mainHouse: building("บ้านหลัก", "🏠", 30, { capacity: [0, 1000, 1800, 2800, 4200, 6000] }),
-      storage: building("คลัง", "📦", 5, { capacity: [0, 800, 1600, 2800, 4500, 7000] }),
-      vault: building("ห้องนิรภัย", "🔐", 10, { protected: [0, 500, 1000, 1800, 3000, 4800] }),
-      wall: building("กำแพง", "🧱", 50), archerTower: building("หอธนู", "🏹", 65), fortress: building("ป้อมปราการ", "🏰", 120),
-      blacksmith: building("โรงตีเหล็ก", "⚒️", 10), barracks: building("ค่ายทหาร", "🪖", 10, { unitCapacity: [0, 20, 35, 55, 80, 120] })
+      mainHouse: building("บ้านหลัก", "🏠", 30, { capacity: [0, 1000, 1800, 2800, 4200, 6000], times: [0, 0, 120, 360, 2880, 8640] }),
+      storage: building("คลัง", "📦", 5, { capacity: [0, 800, 1600, 2800, 4500, 7000], times: [0, 36, 120, 360, 1440, 2880] }),
+      vault: building("ห้องนิรภัย", "🔐", 10, { protected: [0, 500, 1000, 1800, 3000, 4800], times: [0, 60, 180, 540, 1440, 3600] }),
+      wall: building("กำแพง", "🧱", 50, { times: [0, 24, 120, 360, 1080, 2160] }),
+      archerTower: building("หอธนู", "🏹", 65, { times: [0, 60, 180, 540, 1440, 3600] }),
+      fortress: building("ป้อมปราการ", "🏰", 120, { times: [0, 180, 540, 1440, 3600, 8640] }),
+      blacksmith: building("โรงตีเหล็ก", "⚒️", 10, { times: [0, 60, 240, 720, 2160, 4320] }),
+      barracks: building("ค่ายทหาร", "🪖", 10, { unitCapacity: [0, 20, 35, 55, 80, 120], times: [0, 60, 180, 540, 1440, 3600] })
     },
     units: {
       infantry: { name: "ทหารราบ", icon: "⚔️", attack: 20, defense: 18, space: 1, cost: { coins: 80 }, counters: "cavalry", requires: { barracks: 0 } },
@@ -611,6 +670,15 @@ function offlineGameProfile(username, nickname) {
         saved.buildings = { mainHouse: 3, storage: 2, vault: 1, wall: 2, archerTower: 2, fortress: 1, blacksmith: 1, barracks: 2 };
       }
       localStorage.setItem(key, JSON.stringify(saved));
+    }
+    if (saved.upgrade) {
+      const upgradeConfig = offlineGameCatalog().buildings[saved.upgrade.buildingKey];
+      const reducedDuration = upgradeConfig ? Number(upgradeConfig.times[Number(saved.upgrade.targetLevel)] || 0) * 1000 : 0;
+      const startedAt = Number(saved.upgrade.startedAt || 0);
+      if (reducedDuration > 0 && startedAt > 0 && Number(saved.upgrade.finishAt || 0) - startedAt > reducedDuration) {
+        saved.upgrade.finishAt = startedAt + reducedDuration;
+        localStorage.setItem(key, JSON.stringify(saved));
+      }
     }
     if (saved.upgrade && Number(saved.upgrade.finishAt) <= Date.now()) {
       saved.buildings[saved.upgrade.buildingKey] = Number(saved.upgrade.targetLevel);
@@ -648,7 +716,7 @@ function handleOfflineGameApi(action, data) {
   if (action === "scoutGameTarget") return { success: true, data: { username: "student2", nickname: "น้องภูเขา", house_level: 3, defense_estimate: 520, army_hint: { infantry: "มี", archer: "มี", cavalry: "มี" }, loot_estimate: { coins: 300, wood: 80, stone: 60, brick: 30, sand: 20, cement: 0 } } };
   if (action === "attackGameTarget") return { success: true, data: { id: "offline", outcome: "loss", attack_power: 200, defense_power: 520, loot: { coins: 0, wood: 0, stone: 0, brick: 0, sand: 0, cement: 0 }, trophy_delta: -3, energy: 4, attacked_at: new Date().toISOString() } };
   if (action === "getGameHistory") return { success: true, data: [] };
-  if (action === "getGameLeaderboard") return { success: true, data: OFFLINE_MODE.users.filter(item => item.role === "student").map(item => { const p = offlineGameProfile(item.username, item.nickname); return { username: p.username, nickname: p.nickname, house_level: Number(p.buildings.mainHouse || p.house_level), trophy: p.trophy, buildings: p.buildings, defense_power: item.username === "student2" ? 520 : 120, is_current_player: item.username === username }; }) };
+  if (action === "getGameLeaderboard") return { success: true, data: OFFLINE_MODE.users.filter(item => item.role === "student").map(item => { const p = offlineGameProfile(item.username, item.nickname); return { username: p.username, nickname: p.nickname, house_level: Number(p.buildings.mainHouse || p.house_level), trophy: p.trophy, buildings: p.buildings, units: p.units, defense_power: item.username === "student2" ? 520 : 120, is_current_player: item.username === username }; }) };
   if (action === "getGameAdminData") {
     const players = OFFLINE_MODE.users.filter(item => item.role === "student").map(item => {
       const p = offlineGameProfile(item.username, item.nickname);
