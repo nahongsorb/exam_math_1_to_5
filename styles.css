@@ -3363,6 +3363,7 @@ body {
 .pvp-rule-list small { margin-top: 2px; color: var(--text-secondary); font-size: 10px; line-height: 1.35; }
 .pvp-shield-warning { margin: 10px 1px 0; color: var(--warning-color); font-size: 11px; }
 .game-target-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.game-target-grid > .game-target-card:only-child { grid-column: 1 / -1; width: min(100%, 700px); justify-self: center; }
 .game-target-card { position: relative; overflow: hidden; transition: border-color var(--transition-speed), box-shadow var(--transition-speed), transform var(--transition-speed); }
 .game-target-card.is-available { border-color: color-mix(in srgb, var(--success-color) 32%, var(--panel-border)); }
 .game-target-card.is-available:hover { transform: translateY(-2px); box-shadow: 0 14px 35px rgba(0, 0, 0, .12); }
@@ -3459,6 +3460,7 @@ body {
   .target-intel-row > span { padding: 7px 4px; }
   .target-availability-note { align-items: flex-start; flex-direction: column; gap: 3px; }
   .target-availability-note span { text-align: left; }
+  .btn-compact { min-height: 44px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
