@@ -81,7 +81,7 @@ async function loadGameProfile(silent = false) {
 function renderGameChrome() {
   if (!gameState) return;
   const status = document.getElementById("game-status-line");
-  const shieldUntil = Math.max(new Date(gameState.shield_until || 0).getTime() || 0, new Date(gameState.beginner_shield_until || 0).getTime() || 0);
+  const shieldUntil = new Date(gameState.shield_until || 0).getTime() || 0;
   const shieldText = shieldUntil > Date.now() ? ` · 🛡️ Shield ${formatGameDuration(shieldUntil - Date.now())}` : "";
   status.textContent = `${gameState.nickname} · บ้านหลัก Lv.${gameState.house_level} · 🏆 ${formatGameNumber(gameState.trophy)}${shieldText}`;
   const resources = document.getElementById("game-resource-bar");
@@ -392,22 +392,41 @@ async function upgradeArmy() {
 
 async function loadGameTargets() {
   const panel = document.getElementById("game-attack-panel");
-  panel.innerHTML = `<div class="game-empty">กำลังค้นหาคู่ต่อสู้ระดับใกล้เคียง...</div>`;
+  panel.innerHTML = `${renderPvpRulesPanel()}<div class="game-empty">กำลังค้นหาคู่ต่อสู้ระดับใกล้เคียง...</div>`;
   const res = await apiCall("getGameTargets");
-  if (!res.success) { panel.innerHTML = `<div class="game-empty">${escapeHtml(res.message || "โหลดเป้าหมายไม่สำเร็จ")}</div>`; return; }
-  if (!res.data.length) { panel.innerHTML = `<div class="game-empty">🛡️ ยังไม่มีผู้เล่นระดับใกล้เคียงให้โจมตี</div>`; return; }
-  panel.innerHTML = `<div class="game-card-grid">${res.data.map(renderGameTargetCard).join("")}</div>`;
+  if (!res.success) { panel.innerHTML = `${renderPvpRulesPanel()}<div class="game-empty">${escapeHtml(res.message || "โหลดเป้าหมายไม่สำเร็จ")}</div>`; return; }
+  if (!res.data.length) { panel.innerHTML = `${renderPvpRulesPanel()}<div class="game-empty">🛡️ ยังไม่มีผู้เล่นระดับใกล้เคียงให้โจมตี</div>`; return; }
+  panel.innerHTML = `${renderPvpRulesPanel()}<div class="game-card-grid game-target-grid">${res.data.map(renderGameTargetCard).join("")}</div>`;
   panel.querySelectorAll("[data-scout-target]").forEach(button => button.addEventListener("click", () => scoutTarget(button.dataset.scoutTarget)));
   panel.querySelectorAll("[data-attack-target]").forEach(button => button.addEventListener("click", () => attackTarget(button.dataset.attackTarget)));
 }
 
+function renderPvpRulesPanel() {
+  const rules = gameCatalog && gameCatalog.rules ? gameCatalog.rules : {};
+  const shieldHours = Math.max(0, Math.round(Number(rules.shield_ms || 0) / 3600000));
+  const cooldownHours = Math.max(0, Math.round(Number(rules.cooldown_ms || 0) / 3600000));
+  return `<section class="pvp-rules-panel" aria-labelledby="pvp-rules-title">
+    <div class="pvp-rules-heading"><div><p class="game-kicker">PVP BATTLE</p><h2 id="pvp-rules-title">เลือกคู่ต่อสู้</h2><p>สอดแนม วางกำลัง แล้วจึงตัดสินใจโจมตี</p></div><span class="pvp-energy-badge" title="Energy ปัจจุบัน">⚡ ${Number(gameState?.energy || 0)}/${Number(gameState?.max_energy || rules.max_energy || 0)}</span></div>
+    <div class="pvp-rule-list">
+      <div><i aria-hidden="true">⚡</i><span><strong>ใช้ 1 Energy</strong><small>ต่อการโจมตีหนึ่งครั้ง</small></span></div>
+      <div><i aria-hidden="true">🛡️</i><span><strong>Shield ${shieldHours} ชั่วโมง</strong><small>หลังฐานถูกโจมตีสำเร็จ</small></span></div>
+      <div><i aria-hidden="true">🔁</i><span><strong>โจมตีซ้ำ ${cooldownHours} ชั่วโมง</strong><small>สำหรับเป้าหมายคนเดิม</small></span></div>
+      <div><i aria-hidden="true">🚪</i><span><strong>ไม่มี Beginner Shield</strong><small>ผู้เล่นใหม่เข้าร่วม PvP ได้ทันที</small></span></div>
+    </div>
+    <p class="pvp-shield-warning">⚠️ เมื่อคุณสั่งโจมตี Shield ที่มีอยู่ของคุณจะถูกยกเลิกทันที</p>
+  </section>`;
+}
+
 function renderGameTargetCard(target) {
   const disabled = !target.availability.ok;
-  const reason = disabled ? `<p>⏳ ${escapeHtml(target.availability.message)}${target.availability.available_at ? ` · ${formatGameDuration(new Date(target.availability.available_at) - Date.now())}` : ""}</p>` : "";
+  const availabilityCode = String(target.availability.code || "");
+  const statusLabel = disabled ? (availabilityCode === "SHIELD" ? "🛡️ มี Shield" : availabilityCode === "COOLDOWN" ? "⏳ รอโจมตีซ้ำ" : "🔒 ยังโจมตีไม่ได้") : "✓ พร้อมโจมตี";
+  const availableAt = target.availability.available_at ? new Date(target.availability.available_at).getTime() : 0;
+  const reason = disabled ? `<div class="target-availability-note"><strong>${escapeHtml(target.availability.message)}</strong>${availableAt ? `<span>เปิดใน <b data-available-at="${availableAt}">${formatGameDuration(availableAt - Date.now())}</b></span>` : ""}</div>` : `<div class="target-availability-note is-ready"><span>เลือกจำนวนทหารหรือสอดแนมก่อนโจมตี</span></div>`;
   const picker = Object.keys(gameCatalog.units).map(key => `<label>${gameCatalog.units[key].icon} ${escapeHtml(gameCatalog.units[key].name)}<input class="form-control" data-army-unit="${key}" type="number" min="0" max="${Number(gameState.units[key] || 0)}" value="${key === "infantry" ? Math.min(5, Number(gameState.units[key] || 0)) : 0}"></label>`).join("");
-  return `<article class="game-card game-target-card" data-target-card="${escapeHtml(target.username)}" aria-disabled="${disabled}">
-    <div class="game-card-head"><div class="game-card-title"><span>🧑‍🚀</span><h3>${escapeHtml(target.nickname)}</h3></div><span class="game-level">บ้าน Lv.${target.house_level}</span></div>
-    <p>🏆 ${formatGameNumber(target.trophy)} · 🛡️ ป้องกันประมาณ ${formatGameNumber(target.defense_estimate)}<br>📦 ทรัพยากร: <strong>${escapeHtml(target.loot_indicator)}</strong></p>${reason}
+  return `<article class="game-card game-target-card ${disabled ? "is-unavailable" : "is-available"}" data-target-card="${escapeHtml(target.username)}" aria-disabled="${disabled}">
+    <div class="game-card-head"><div class="game-card-title"><span>🧑‍🚀</span><div><h3>${escapeHtml(target.nickname)}</h3><small>บ้าน Lv.${target.house_level}</small></div></div><span class="target-status-badge ${disabled ? "is-waiting" : "is-ready"}">${statusLabel}</span></div>
+    <div class="target-intel-row"><span>🏆 <strong>${formatGameNumber(target.trophy)}</strong><small>Trophy</small></span><span>🛡️ <strong>${formatGameNumber(target.defense_estimate)}</strong><small>ป้องกันโดยประมาณ</small></span><span>📦 <strong>${escapeHtml(target.loot_indicator)}</strong><small>ทรัพยากร</small></span></div>${reason}
     <div class="game-army-picker">${picker}</div><div class="game-scout-box hidden" data-scout-result></div>
     <div class="game-target-actions"><button class="btn btn-secondary" data-scout-target="${escapeHtml(target.username)}" type="button" ${disabled ? "disabled" : ""}>🔭 สอดแนม</button><button class="btn btn-danger" data-attack-target="${escapeHtml(target.username)}" type="button" ${disabled ? "disabled" : ""}>⚔️ โจมตี</button></div>
   </article>`;
@@ -458,14 +477,20 @@ async function loadGameRanking() {
 function startGameClock() {
   clearInterval(gameClockTimer);
   gameClockTimer = setInterval(() => {
-    let shouldRefresh = false;
+    let shouldRefresh = false, shouldRefreshTargets = false;
     document.querySelectorAll("[data-finish-at]").forEach(element => {
       const remaining = Number(element.dataset.finishAt) - Date.now();
       element.textContent = remaining > 0 ? `เหลือ ${formatGameDuration(remaining)}` : "กำลังยืนยันการก่อสร้าง...";
       if (remaining <= 0) shouldRefresh = true;
     });
+    document.querySelectorAll("[data-available-at]").forEach(element => {
+      const remaining = Number(element.dataset.availableAt) - Date.now();
+      element.textContent = remaining > 0 ? formatGameDuration(remaining) : "พร้อมแล้ว";
+      if (remaining <= 0) { element.removeAttribute("data-available-at"); shouldRefreshTargets = true; }
+    });
     updateConstructionProgress();
     if (shouldRefresh) { clearInterval(gameClockTimer); loadGameProfile(true); }
+    else if (shouldRefreshTargets && gameActiveTab === "attack") loadGameTargets();
     if (gameState) renderGameChrome();
   }, 1000);
 }
@@ -570,7 +595,7 @@ function offlineGameCatalog() {
       catapult: { name: "เครื่องยิงหิน", icon: "🪨", attack: 85, defense: 10, space: 4, cost: { coins: 600, stone: 15 }, requires: { barracks: 3 } }
     },
     army_upgrade_costs: [null, null, { coins: 700, brick: 50 }, { coins: 1200, cement: 30 }],
-    rules: { max_energy: 5, energy_regen_ms: 10800000, cooldown_ms: 86400000, shield_ms: 28800000, beginner_shield_ms: 259200000, max_loot_percent: .1, level_range: 2, trophy_win: 15, trophy_loss: 3 }
+    rules: { max_energy: 5, energy_regen_ms: 10800000, cooldown_ms: 43200000, shield_ms: 14400000, beginner_shield_ms: 0, max_loot_percent: .1, level_range: 2, trophy_win: 15, trophy_loss: 3 }
   };
 }
 

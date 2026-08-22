@@ -1270,12 +1270,18 @@ async function submitAnswersForm() {
   
   if (res.success) {
     const result = res.data;
-    if (result.weekly_game_reward) {
-      if (result.weekly_game_reward.granted) {
-        const reward = result.weekly_game_reward.reward || {};
-        const rewardText = Object.keys(reward).filter(key => Number(reward[key]) > 0).map(key => `${key} +${Number(reward[key]).toLocaleString("th-TH")}`).join(" · ");
-        showNotice(`🎮 ได้รับรางวัลประจำสัปดาห์: ${rewardText}`, "success");
-      } else if (result.weekly_game_reward.reason === "ALREADY_CLAIMED") {
+    const gameReward = result.game_reward || result.weekly_game_reward;
+    if (gameReward) {
+      if (gameReward.granted) {
+        const reward = gameReward.reward || {};
+        const resourceLabels = { coins: "🪙 Coins", wood: "🪵 Wood", stone: "🪨 Stone", brick: "🧱 Brick", sand: "🏖️ Sand", cement: "🏗️ Cement" };
+        const rewardText = Object.keys(reward).filter(key => Number(reward[key]) > 0).map(key => `${resourceLabels[key] || key} +${Number(reward[key]).toLocaleString("th-TH")}`).join(" · ");
+        showNotice(`🎮 คะแนนสูงสุดเพิ่ม ${gameReward.added_correct || 0} ข้อ รับทรัพยากรเพิ่ม: ${rewardText}`, "success");
+      } else if (gameReward.reason === "NO_SCORE_IMPROVEMENT") {
+        showNotice(`🎮 คะแนนครั้งนี้ยังไม่สูงกว่าสถิติเดิม ${Number(gameReward.previous_best_score || 0)}/${result.total} จึงไม่ได้รับทรัพยากรเพิ่ม`, "info");
+      } else if (gameReward.reason === "NOT_REWARD_EXAM") {
+        showNotice("🎮 ทรัพยากรเกมได้รับจากข้อสอบชุดที่ 7–10 เท่านั้น", "info");
+      } else if (gameReward.reason === "ALREADY_CLAIMED") {
         showNotice("🎮 รางวัลเกมของข้อสอบชุดนี้เคยได้รับแล้ว จึงไม่แจกซ้ำ", "info");
       }
     }
