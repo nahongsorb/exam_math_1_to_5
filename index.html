@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=20260822-army1">
+  <link rel="stylesheet" href="styles.css?v=20260828-teacher-village1">
   <!-- Lucide Icons -->
   <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.407.0/dist/umd/lucide.min.js"></script>
   <!-- KaTeX for math rendering -->
@@ -799,20 +799,90 @@
         </div>
 
         <div id="admin-tab-game" class="admin-tab-content">
-          <div class="game-admin-toolbar glass-panel">
-            <div>
-              <h3>🎮 Game Management</h3>
-              <p id="game-admin-status">กำลังรอโหลดข้อมูลเกม</p>
+          <section class="teacher-game-hero" aria-labelledby="teacher-village-title">
+            <div class="teacher-game-heading">
+              <span class="teacher-game-heading-icon" aria-hidden="true"><i data-lucide="trees"></i></span>
+              <div>
+                <p class="teacher-game-kicker">ห้องเรียนของคุณครู</p>
+                <h3 id="teacher-village-title">ภาพรวมหมู่บ้านนักเรียน</h3>
+                <p id="game-admin-status" class="teacher-game-status" aria-live="polite">กำลังรอโหลดข้อมูลเกม</p>
+              </div>
             </div>
-            <label class="game-switch"><input id="game-enabled-toggle" type="checkbox"><span>เปิดระบบเกม</span></label>
-            <button id="btn-refresh-game-admin" class="btn btn-secondary" type="button">โหลดข้อมูลใหม่</button>
+            <div class="teacher-game-controls">
+              <label class="teacher-game-switch">
+                <input id="game-enabled-toggle" type="checkbox" role="switch">
+                <span class="teacher-game-switch-track" aria-hidden="true"></span>
+                <span><strong>เปิดหมู่บ้าน</strong><small>ให้นักเรียนเข้าเล่นเกมได้</small></span>
+              </label>
+              <button id="btn-refresh-game-admin" class="btn btn-secondary teacher-refresh-button" type="button">
+                <i data-lucide="refresh-cw" class="icon-sm" aria-hidden="true"></i>
+                <span>อัปเดตข้อมูล</span>
+              </button>
+            </div>
+          </section>
+
+          <div id="game-admin-summary" class="teacher-summary-grid" aria-label="สรุปข้อมูลหมู่บ้าน">
+            <article class="teacher-summary-card"><span class="teacher-summary-icon is-blue"><i data-lucide="users"></i></span><div><small>นักเรียนในหมู่บ้าน</small><strong>—</strong><p>กำลังโหลดข้อมูล</p></div></article>
+            <article class="teacher-summary-card"><span class="teacher-summary-icon is-green"><i data-lucide="activity"></i></span><div><small>เข้าเล่นใน 24 ชม.</small><strong>—</strong><p>กำลังโหลดข้อมูล</p></div></article>
+            <article class="teacher-summary-card"><span class="teacher-summary-icon is-amber"><i data-lucide="home"></i></span><div><small>ระดับบ้านเฉลี่ย</small><strong>—</strong><p>กำลังโหลดข้อมูล</p></div></article>
+            <article class="teacher-summary-card"><span class="teacher-summary-icon is-purple"><i data-lucide="trophy"></i></span><div><small>ถ้วยรางวัลรวม</small><strong>—</strong><p>กำลังโหลดข้อมูล</p></div></article>
           </div>
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead><tr><th>ผู้เล่น</th><th>บ้าน</th><th>Trophy</th><th>ทรัพยากร</th><th>ใช้งานล่าสุด</th><th>จัดการ</th></tr></thead>
-              <tbody id="game-admin-players"><tr><td colspan="6">ยังไม่มีข้อมูลผู้เล่นเกม</td></tr></tbody>
-            </table>
-          </div>
+
+          <section class="teacher-village-section" aria-labelledby="teacher-village-map-title">
+            <div class="teacher-section-heading">
+              <div>
+                <p class="teacher-game-kicker">VILLAGE MAP</p>
+                <h3 id="teacher-village-map-title">หมู่บ้านของห้องเรา</h3>
+                <p>เห็นระดับบ้านและความเคลื่อนไหวของนักเรียนได้ในมุมมองเดียว</p>
+              </div>
+              <div class="teacher-village-legend" aria-label="คำอธิบายสถานะ">
+                <span><i class="teacher-status-dot is-active"></i> วันนี้</span>
+                <span><i class="teacher-status-dot is-recent"></i> ภายใน 7 วัน</span>
+                <span><i class="teacher-status-dot is-inactive"></i> ควรติดตาม</span>
+              </div>
+            </div>
+            <div id="game-admin-village" class="teacher-village-map" aria-live="polite">
+              <div class="teacher-village-loading"><span class="spinner"></span> กำลังสร้างภาพรวมหมู่บ้าน...</div>
+            </div>
+          </section>
+
+          <section class="teacher-player-section" aria-labelledby="teacher-player-list-title">
+            <div class="teacher-section-heading teacher-player-heading">
+              <div>
+                <p class="teacher-game-kicker">STUDENT MANAGEMENT</p>
+                <h3 id="teacher-player-list-title">ติดตามนักเรียนรายคน</h3>
+                <p id="game-admin-results-count">แสดงนักเรียนทั้งหมด</p>
+              </div>
+              <div class="teacher-player-filters" role="search">
+                <label class="teacher-search-field">
+                  <i data-lucide="search" class="icon-sm" aria-hidden="true"></i>
+                  <span class="sr-only">ค้นหานักเรียน</span>
+                  <input id="game-admin-search" type="search" placeholder="ค้นหาชื่อหรือชื่อผู้ใช้">
+                </label>
+                <label>
+                  <span class="sr-only">กรองตามระดับบ้าน</span>
+                  <select id="game-admin-level-filter" class="form-control">
+                    <option value="all">ทุกระดับบ้าน</option>
+                  </select>
+                </label>
+                <label>
+                  <span class="sr-only">กรองตามการเข้าใช้งาน</span>
+                  <select id="game-admin-activity-filter" class="form-control">
+                    <option value="all">ทุกสถานะ</option>
+                    <option value="active">เข้าเล่นวันนี้</option>
+                    <option value="recent">เข้าเล่นใน 7 วัน</option>
+                    <option value="inactive">ควรติดตาม</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <div class="table-responsive teacher-player-table-wrap">
+              <table class="data-table teacher-player-table">
+                <thead><tr><th>นักเรียน</th><th>หมู่บ้าน</th><th>ถ้วยรางวัล</th><th>ทรัพยากรคงเหลือ</th><th>เข้าเล่นล่าสุด</th><th class="teacher-actions-heading">จัดการ</th></tr></thead>
+                <tbody id="game-admin-players"><tr><td colspan="6" class="teacher-empty-cell">กำลังโหลดข้อมูลนักเรียน...</td></tr></tbody>
+              </table>
+            </div>
+          </section>
         </div>
 
       </div>
@@ -947,7 +1017,7 @@
   <script src="config.js?v=20260820-game1"></script>
   <!-- Client application logic -->
   <script src="app.js?v=20260822-reward1"></script>
-  <script src="game.js?v=20260822-army1"></script>
+  <script src="game.js?v=20260828-teacher-village1"></script>
 
 </body>
 </html>

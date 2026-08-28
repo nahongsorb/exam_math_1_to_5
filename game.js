@@ -8,6 +8,7 @@ let villagePlayers = [];
 let villagePage = 1;
 let playerPreviewTrigger = null;
 const VILLAGE_PAGE_SIZE = 12;
+const gameAdminFilters = { search: "", level: "all", activity: "all" };
 
 const GAME_RESOURCE_META = {
   coins: ["🪙", "Coins"], wood: ["🪵", "Wood"], stone: ["🪨", "Stone"],
@@ -49,6 +50,21 @@ function setupGameListeners() {
   if (refreshAdmin) refreshAdmin.addEventListener("click", loadGameAdminData);
   const enabledToggle = document.getElementById("game-enabled-toggle");
   if (enabledToggle) enabledToggle.addEventListener("change", changeGameEnabled);
+  const adminSearch = document.getElementById("game-admin-search");
+  if (adminSearch) adminSearch.addEventListener("input", event => {
+    gameAdminFilters.search = event.target.value.trim().toLocaleLowerCase("th-TH");
+    renderGameAdminDashboard();
+  });
+  const adminLevelFilter = document.getElementById("game-admin-level-filter");
+  if (adminLevelFilter) adminLevelFilter.addEventListener("change", event => {
+    gameAdminFilters.level = event.target.value;
+    renderGameAdminDashboard();
+  });
+  const adminActivityFilter = document.getElementById("game-admin-activity-filter");
+  if (adminActivityFilter) adminActivityFilter.addEventListener("change", event => {
+    gameAdminFilters.activity = event.target.value;
+    renderGameAdminDashboard();
+  });
 }
 
 async function openBaseGame() {
@@ -588,18 +604,147 @@ function showGameApiError(res) {
   setGameFeedback(message, "error");
 }
 
-async function loadGameAdminData() {
-  if (!currentUser || currentUser.role !== "teacher") return;
-  const status = document.getElementById("game-admin-status"); status.textContent = "กำลังโหลดข้อมูลผู้เล่น...";
-  const res = await apiCall("getGameAdminData");
-  if (!res.success) { status.textContent = res.message || "โหลดข้อมูลไม่สำเร็จ"; return; }
-  gameAdminData = res.data;
-  document.getElementById("game-enabled-toggle").checked = Boolean(res.data.enabled);
-  status.textContent = `${res.data.enabled ? "เปิดใช้งาน" : "ปิดใช้งาน"} · เริ่มแจก Reward หลัง ${new Date(res.data.start_date).toLocaleString("th-TH")} · ผู้เล่น ${res.data.players.length} คน`;
+function gameAdminActivityInfo(lastActive) {
+  const time = new Date(lastActive).getTime();
+  if (!Number.isFinite(time)) return { key: "inactive", label: "ยังไม่พบเวลาเข้าเล่น", shortLabel: "ยังไม่มีข้อมูล" };
+  const age = Math.max(0, Date.now() - time);
+  if (age <= 86400000) return { key: "active", label: "เข้าเล่นวันนี้", shortLabel: formatGameAdminRelativeTime(time) };
+  if (age <= 604800000) return { key: "recent", label: "เข้าเล่นภายใน 7 วัน", shortLabel: formatGameAdminRelativeTime(time) };
+  return { key: "inactive", label: "ควรติดตาม", shortLabel: formatGameAdminRelativeTime(time) };
+}
+
+function formatGameAdminRelativeTime(time) {
+  const age = Math.max(0, Date.now() - Number(time));
+  const minutes = Math.floor(age / 60000);
+  if (minutes < 1) return "เมื่อสักครู่";
+  if (minutes < 60) return `${minutes} นาทีที่แล้ว`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} ชม.ที่แล้ว`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} วันที่แล้ว`;
+  return new Date(time).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit" });
+}
+
+function gameAdminFilteredPlayers() {
+  const players = gameAdminData && Array.isArray(gameAdminData.players) ? gameAdminData.players : [];
+  return players.filter(player => {
+    const name = `${player.nickname || ""} ${player.username || ""}`.toLocaleLowerCase("th-TH");
+    if (gameAdminFilters.search && !name.includes(gameAdminFilters.search)) return false;
+    if (gameAdminFilters.level !== "all" && String(Number(player.house_level || 1)) !== gameAdminFilters.level) return false;
+    return gameAdminFilters.activity === "all" || gameAdminActivityInfo(player.last_active).key === gameAdminFilters.activity;
+  });
+}
+
+function renderGameAdminSummary(players) {
+  const summary = document.getElementById("game-admin-summary");
+  if (!summary) return;
+  const activeCount = players.filter(player => gameAdminActivityInfo(player.last_active).key === "active").length;
+  const followUpCount = players.filter(player => gameAdminActivityInfo(player.last_active).key === "inactive").length;
+  const averageLevel = players.length ? players.reduce((sum, player) => sum + Number(player.house_level || 1), 0) / players.length : 0;
+  const totalTrophy = players.reduce((sum, player) => sum + Number(player.trophy || 0), 0);
+  const cards = [
+    { icon: "users", tone: "is-blue", label: "นักเรียนในหมู่บ้าน", value: `${players.length} คน`, detail: players.length ? "บัญชีที่เริ่มสร้างหมู่บ้านแล้ว" : "ยังไม่มีนักเรียนเปิดเกม" },
+    { icon: "activity", tone: "is-green", label: "เข้าเล่นใน 24 ชม.", value: `${activeCount} คน`, detail: followUpCount ? `มี ${followUpCount} คนควรติดตาม` : "นักเรียนมีความเคลื่อนไหวดี" },
+    { icon: "home", tone: "is-amber", label: "ระดับบ้านเฉลี่ย", value: players.length ? `Lv.${averageLevel.toFixed(1)}` : "—", detail: players.length ? `สูงสุด Lv.${Math.max(...players.map(player => Number(player.house_level || 1)))}` : "ยังไม่มีข้อมูลระดับบ้าน" },
+    { icon: "trophy", tone: "is-purple", label: "ถ้วยรางวัลรวม", value: formatGameNumber(totalTrophy), detail: players.length ? `เฉลี่ย ${formatGameNumber(Math.round(totalTrophy / players.length))} ถ้วยต่อคน` : "ยังไม่มีถ้วยรางวัล" }
+  ];
+  summary.innerHTML = cards.map(card => `<article class="teacher-summary-card"><span class="teacher-summary-icon ${card.tone}"><i data-lucide="${card.icon}" aria-hidden="true"></i></span><div><small>${card.label}</small><strong>${card.value}</strong><p>${card.detail}</p></div></article>`).join("");
+}
+
+function renderGameAdminVillage(players) {
+  const village = document.getElementById("game-admin-village");
+  if (!village) return;
+  if (!players.length) {
+    village.innerHTML = `<div class="teacher-village-empty"><span>🏡</span><strong>ไม่พบบ้านที่ตรงกับตัวกรอง</strong><small>ลองเปลี่ยนคำค้นหาหรือสถานะการเข้าเล่น</small></div>`;
+    return;
+  }
+  village.innerHTML = players.map((player, index) => {
+    const activity = gameAdminActivityInfo(player.last_active);
+    const buildings = { ...defaultVisualBuildings(), ...(player.buildings || {}), mainHouse: Number(player.house_level || 1) };
+    const visual = { ...player, buildings, units: player.units || {}, house_level: Number(player.house_level || 1) };
+    return `<button class="teacher-village-card" type="button" data-game-player-focus="${escapeHtml(player.username)}" aria-label="ดูข้อมูลของ ${escapeHtml(player.nickname)} บ้านระดับ ${visual.house_level}" style="--plot-delay:${index * 20}ms">
+      <span class="teacher-village-card-scene">${renderBaseScene(visual, { compact: true, prefix: `teacher-${index}-${player.username}` })}</span>
+      <span class="teacher-village-card-info"><strong>${escapeHtml(player.nickname)}</strong><i class="teacher-status-dot is-${activity.key}" title="${activity.label}"></i><small>@${escapeHtml(player.username)}</small><span class="teacher-village-level"><span>🏠 Lv.${visual.house_level}</span><b>🏆 ${formatGameNumber(player.trophy)}</b></span></span>
+    </button>`;
+  }).join("");
+}
+
+function renderGameAdminPlayerTable(players) {
   const tbody = document.getElementById("game-admin-players");
-  tbody.innerHTML = res.data.players.length ? res.data.players.map(player => `<tr><td><strong>${escapeHtml(player.nickname)}</strong><br><small>${escapeHtml(player.username)}</small></td><td>Lv.${player.house_level}</td><td>🏆 ${formatGameNumber(player.trophy)}</td><td>${Object.keys(player.resources).map(key => `${GAME_RESOURCE_META[key][0]}${formatGameNumber(player.resources[key])}`).join(" ")}</td><td>${new Date(player.last_active).toLocaleString("th-TH")}</td><td><div class="game-admin-actions"><button class="btn btn-secondary" data-game-adjust="${escapeHtml(player.username)}" type="button">ปรับทรัพยากร</button><button class="btn btn-danger" data-game-reset="${escapeHtml(player.username)}" type="button">Reset</button></div></td></tr>`).join("") : `<tr><td colspan="6">ยังไม่มีนักเรียนเปิดเกม</td></tr>`;
+  const count = document.getElementById("game-admin-results-count");
+  const total = gameAdminData && Array.isArray(gameAdminData.players) ? gameAdminData.players.length : 0;
+  if (count) count.textContent = players.length === total ? `นักเรียนทั้งหมด ${total} คน` : `พบ ${players.length} จาก ${total} คน`;
+  if (!tbody) return;
+  if (!players.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="teacher-empty-cell">ไม่พบนักเรียนที่ตรงกับตัวกรอง</td></tr>`;
+    return;
+  }
+  const resourceKeys = Object.keys(GAME_RESOURCE_META);
+  tbody.innerHTML = players.map(player => {
+    const activity = gameAdminActivityInfo(player.last_active);
+    const initial = Array.from(String(player.nickname || player.username || "?"))[0] || "?";
+    const resources = player.resources || {};
+    return `<tr data-game-player-row="${escapeHtml(player.username)}">
+      <td data-label="นักเรียน"><div class="teacher-player-name"><span class="teacher-player-avatar" aria-hidden="true">${escapeHtml(initial)}</span><span><strong>${escapeHtml(player.nickname)}</strong><small>@${escapeHtml(player.username)}</small></span></div></td>
+      <td data-label="หมู่บ้าน"><span class="teacher-house-pill">🏠 บ้าน Lv.${Number(player.house_level || 1)}</span></td>
+      <td data-label="ถ้วยรางวัล"><span class="teacher-trophy-pill">🏆 ${formatGameNumber(player.trophy)}</span></td>
+      <td data-label="ทรัพยากร"><div class="teacher-resource-list">${resourceKeys.map(key => `<span class="teacher-resource-chip" title="${escapeHtml(GAME_RESOURCE_META[key][1])}">${GAME_RESOURCE_META[key][0]} ${formatGameNumber(resources[key])}</span>`).join("")}</div></td>
+      <td data-label="เข้าเล่นล่าสุด"><div class="teacher-activity-label"><i class="teacher-status-dot is-${activity.key}"></i><span><strong>${activity.label}</strong><small>${activity.shortLabel}</small></span></div></td>
+      <td data-label="จัดการ"><div class="game-admin-actions"><button class="btn btn-secondary" data-game-adjust="${escapeHtml(player.username)}" type="button"><i data-lucide="sliders-horizontal" aria-hidden="true"></i> ปรับทรัพยากร</button><button class="btn btn-danger" data-game-reset="${escapeHtml(player.username)}" type="button"><i data-lucide="rotate-ccw" aria-hidden="true"></i> เริ่มเกมใหม่</button></div></td>
+    </tr>`;
+  }).join("");
   tbody.querySelectorAll("[data-game-adjust]").forEach(button => button.addEventListener("click", () => adminAdjustResources(button.dataset.gameAdjust)));
   tbody.querySelectorAll("[data-game-reset]").forEach(button => button.addEventListener("click", () => adminResetGame(button.dataset.gameReset)));
+}
+
+function focusGameAdminPlayer(username, trigger) {
+  document.querySelectorAll("[data-game-player-focus], [data-game-player-row]").forEach(element => element.classList.remove("is-highlighted"));
+  if (trigger) trigger.classList.add("is-highlighted");
+  const row = document.querySelector(`[data-game-player-row="${CSS.escape(username)}"]`);
+  if (!row) return;
+  row.classList.add("is-highlighted");
+  row.scrollIntoView({ behavior: "smooth", block: "center" });
+  window.setTimeout(() => row.classList.remove("is-highlighted"), 2200);
+}
+
+function renderGameAdminDashboard() {
+  if (!gameAdminData) return;
+  const players = Array.isArray(gameAdminData.players) ? gameAdminData.players : [];
+  const levelFilter = document.getElementById("game-admin-level-filter");
+  if (levelFilter) {
+    const levels = [...new Set(players.map(player => Number(player.house_level || 1)))].sort((a, b) => a - b);
+    levelFilter.innerHTML = `<option value="all">ทุกระดับบ้าน</option>${levels.map(level => `<option value="${level}">บ้านระดับ ${level}</option>`).join("")}`;
+    levelFilter.value = levels.includes(Number(gameAdminFilters.level)) ? gameAdminFilters.level : "all";
+    gameAdminFilters.level = levelFilter.value;
+  }
+  const filteredPlayers = gameAdminFilteredPlayers();
+  renderGameAdminSummary(players);
+  renderGameAdminVillage(filteredPlayers);
+  renderGameAdminPlayerTable(filteredPlayers);
+  document.querySelectorAll("[data-game-player-focus]").forEach(button => button.addEventListener("click", () => focusGameAdminPlayer(button.dataset.gamePlayerFocus, button)));
+  if (window.lucide) window.lucide.createIcons();
+}
+
+async function loadGameAdminData() {
+  if (!currentUser || currentUser.role !== "teacher") return;
+  const status = document.getElementById("game-admin-status");
+  const refreshButton = document.getElementById("btn-refresh-game-admin");
+  status.textContent = "กำลังอัปเดตข้อมูลหมู่บ้าน...";
+  if (refreshButton) { refreshButton.disabled = true; refreshButton.setAttribute("aria-busy", "true"); }
+  const res = await apiCall("getGameAdminData");
+  if (refreshButton) { refreshButton.disabled = false; refreshButton.removeAttribute("aria-busy"); }
+  if (!res.success) {
+    status.textContent = res.message || "โหลดข้อมูลไม่สำเร็จ";
+    const village = document.getElementById("game-admin-village");
+    if (village) village.innerHTML = `<div class="teacher-village-empty"><span>⚠️</span><strong>ยังโหลดหมู่บ้านไม่ได้</strong><small>${escapeHtml(res.message || "กรุณาลองใหม่อีกครั้ง")}</small></div>`;
+    return;
+  }
+  gameAdminData = res.data;
+  document.getElementById("game-enabled-toggle").checked = Boolean(res.data.enabled);
+  const startTime = new Date(res.data.start_date);
+  const startLabel = Number.isFinite(startTime.getTime()) ? startTime.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) : "ยังไม่กำหนด";
+  status.textContent = `${res.data.enabled ? "● หมู่บ้านเปิดใช้งาน" : "○ หมู่บ้านปิดอยู่"} · เริ่มแจก Reward ${startLabel} · อัปเดตล่าสุด ${new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} น.`;
+  renderGameAdminDashboard();
 }
 
 async function changeGameEnabled(event) {
@@ -720,7 +865,7 @@ function handleOfflineGameApi(action, data) {
   if (action === "getGameAdminData") {
     const players = OFFLINE_MODE.users.filter(item => item.role === "student").map(item => {
       const p = offlineGameProfile(item.username, item.nickname);
-      return { username: p.username, nickname: p.nickname, house_level: p.house_level, trophy: p.trophy, resources: p.resources, last_active: p.last_active };
+      return { username: p.username, nickname: p.nickname, house_level: p.house_level, trophy: p.trophy, resources: p.resources, buildings: p.buildings, units: p.units, defense_power: item.username === "student2" ? 520 : 120, last_active: p.last_active };
     });
     return { success: true, data: { enabled: true, start_date: "2026-08-20T00:00:00+07:00", players } };
   }
