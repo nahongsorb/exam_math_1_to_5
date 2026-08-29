@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=20260828-teacher-village2">
+  <link rel="stylesheet" href="styles.css?v=20260829-regrade1">
   <!-- Lucide Icons -->
   <script defer src="https://cdn.jsdelivr.net/npm/lucide@0.407.0/dist/umd/lucide.min.js"></script>
   <!-- KaTeX for math rendering -->
@@ -613,7 +613,7 @@
                 <div class="form-group">
                   <label for="admin-question-topics" style="font-weight:600; margin-bottom:6px; display:block;">บทเรียนของแต่ละข้อ (30 บรรทัด)</label>
                   <textarea id="admin-question-topics" class="form-control" rows="8" placeholder="จำนวนนับและการคำนวณ&#10;เศษส่วน ทศนิยม และร้อยละ&#10;...&#10;เส้นรอบรูป พื้นที่ และปริมาตร"></textarea>
-                  <small>บรรทัดที่ 1 คือข้อ 1 ถึงบรรทัดที่ 30 คือข้อ 30; ใช้ชื่อบทเรียนมาตรฐานที่ระบบกำหนดเพื่อรวมคะแนนข้ามชุดได้ถูกต้อง ระบบจะไม่เปลี่ยนคะแนน</small>
+                  <small>บรรทัดที่ 1 คือข้อ 1 ถึงบรรทัดที่ 30 คือข้อ 30; ใช้ชื่อบทเรียนมาตรฐานที่ระบบกำหนดเพื่อรวมคะแนนข้ามชุดได้ถูกต้อง คะแนนจะไม่เปลี่ยนจนกว่าคุณครูกดปุ่มปรับคะแนนใหม่</small>
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="margin-top:15px;">
@@ -621,6 +621,23 @@
                   <span class="spinner hidden" id="save-settings-spinner"></span>
                 </button>
                 <div id="admin-save-message" class="success-msg" style="margin-top:10px;"></div>
+
+                <section class="admin-regrade-panel" aria-labelledby="admin-regrade-title">
+                  <div class="admin-regrade-copy">
+                    <span class="admin-regrade-icon"><i data-lucide="refresh-cw" aria-hidden="true"></i></span>
+                    <div>
+                      <h4 id="admin-regrade-title">แก้เฉลยแล้ว ต้องการปรับคะแนนเดิม?</h4>
+                      <p>บันทึกเฉลยให้เรียบร้อยก่อน แล้วระบบจะตรวจคำตอบเดิมของนักเรียนทุกคนในชุดนี้ใหม่ โดยไม่แก้คำตอบที่ส่ง และสำหรับชุดที่ 7–10 จะเพิ่มทรัพยากรตามส่วนของคะแนนสูงสุดที่เพิ่มขึ้น</p>
+                      <small id="admin-regrade-count">กำลังตรวจจำนวนใบคำตอบ...</small>
+                    </div>
+                  </div>
+                  <button id="btn-regrade-exam" class="btn btn-warning" type="button">
+                    <i data-lucide="calculator" aria-hidden="true"></i>
+                    ปรับคะแนนใหม่จากเฉลยล่าสุด
+                    <span class="spinner hidden" id="regrade-exam-spinner"></span>
+                  </button>
+                  <div id="admin-regrade-message" class="admin-regrade-message" role="status" aria-live="polite"></div>
+                </section>
               </form>
             </div>
 
@@ -1016,8 +1033,8 @@
   <!-- Configuration files -->
   <script src="config.js?v=20260820-game1"></script>
   <!-- Client application logic -->
-  <script src="app.js?v=20260822-reward1"></script>
-  <script src="game.js?v=20260828-teacher-village1"></script>
+  <script src="app.js?v=20260829-regrade-reward1"></script>
+  <script src="game.js?v=20260829-battle-animation1"></script>
 
 </body>
 </html>

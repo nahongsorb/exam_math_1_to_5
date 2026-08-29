@@ -556,6 +556,7 @@ function setupEventListeners() {
 
   // Admin form save settings
   document.getElementById("form-admin-exam-settings").addEventListener("submit", saveAdminExamSettings);
+  document.getElementById("btn-regrade-exam").addEventListener("click", regradeSelectedExam);
 
   // Toggle schedule inputs based on selected status dropdown
   document.getElementById("admin-exam-status").addEventListener("change", (e) => {
@@ -606,18 +607,18 @@ function setupEventListeners() {
 
 // Call Apps Script POST API
 async function apiCall(action, data = {}) {
-  if (OFFLINE_MODE.active) {
-    if (/Game/.test(action) && typeof handleOfflineGameApi === "function") {
-      return handleOfflineGameApi(action, data);
-    }
-    return handleOfflineApi(action, data);
-  }
-
   const requestData = { ...data };
   const useSession = requestData.useSession !== false;
   delete requestData.useSession;
   if (useSession && currentUser && currentUser.token && !requestData.token) {
     requestData.token = currentUser.token;
+  }
+
+  if (OFFLINE_MODE.active) {
+    if (/Game/.test(action) && typeof handleOfflineGameApi === "function") {
+      return handleOfflineGameApi(action, requestData);
+    }
+    return handleOfflineApi(action, requestData);
   }
 
   try {
@@ -1954,6 +1955,68 @@ function loadAdminSetSettings() {
     `;
     keysContainer.appendChild(div);
   }
+  updateRegradePanel();
+}
+
+function getAdminAnswerKeyFromForm() {
+  return Array.from({ length: 30 }, (_, index) => document.getElementById(`admin-key-q${index + 1}`).value).join(",");
+}
+
+function updateRegradePanel() {
+  const button = document.getElementById("btn-regrade-exam");
+  const count = document.getElementById("admin-regrade-count");
+  if (!button || !count || !adminAllData) return;
+  const total = (adminAllData.submissions || []).filter(submission => String(submission.set_id) === String(adminSelectedSet)).length;
+  count.textContent = total ? `พบใบคำตอบ ${total.toLocaleString("th-TH")} รายการในชุดนี้` : "ยังไม่มีใบคำตอบในชุดนี้";
+  button.disabled = total === 0;
+}
+
+async function regradeSelectedExam() {
+  if (!adminAllData) return;
+  const exam = adminAllData.exams.find(item => String(item.set_id) === String(adminSelectedSet));
+  const message = document.getElementById("admin-regrade-message");
+  const button = document.getElementById("btn-regrade-exam");
+  const spinner = document.getElementById("regrade-exam-spinner");
+  message.className = "admin-regrade-message";
+  message.textContent = "";
+
+  if (!exam || getAdminAnswerKeyFromForm() !== String(exam.answers || "")) {
+    message.className = "admin-regrade-message error-msg";
+    message.textContent = "เฉลยบนหน้าจอยังไม่ตรงกับฉบับที่บันทึก กรุณากดบันทึกการตั้งค่าก่อนปรับคะแนน";
+    return;
+  }
+  const total = (adminAllData.submissions || []).filter(submission => String(submission.set_id) === String(adminSelectedSet)).length;
+  if (!total) return;
+  const rewardNotice = Number(adminSelectedSet) >= 7
+    ? " หากคะแนนสูงสุดเพิ่มขึ้น ระบบจะเพิ่มทรัพยากรเกมเฉพาะส่วนต่างให้โดยอัตโนมัติ"
+    : " ชุดนี้ไม่มีรางวัลทรัพยากรเกม";
+  const confirmed = await showConfirm(`ปรับคะแนนใบคำตอบ ${total} รายการของข้อสอบชุดที่ ${adminSelectedSet} ใหม่จากเฉลยล่าสุด? ระบบจะคงคำตอบเดิม${rewardNotice}`);
+  if (!confirmed) return;
+
+  button.disabled = true;
+  spinner.classList.remove("hidden");
+  const res = await apiCall("regradeExamSubmissions", { username: currentUser.username, set_id: adminSelectedSet });
+  spinner.classList.add("hidden");
+  if (!res.success) {
+    button.disabled = false;
+    message.className = "admin-regrade-message error-msg";
+    message.textContent = res.message || "ไม่สามารถปรับคะแนนใหม่ได้";
+    return;
+  }
+  const summary = res.data || {};
+  message.className = "admin-regrade-message success-msg";
+  const rewardTotals = summary.game_reward_totals || {};
+  const resourceLabels = { coins: "🪙", wood: "🪵", stone: "🪨", brick: "🧱", sand: "🏖️", cement: "🏗️" };
+  const rewardParts = Object.keys(resourceLabels)
+    .filter(key => Number(rewardTotals[key] || 0) > 0)
+    .map(key => `${resourceLabels[key]} ${Number(rewardTotals[key]).toLocaleString("th-TH")}`);
+  const rewardSummary = summary.reward_eligible
+    ? Number(summary.rewarded_students || 0) > 0
+      ? ` · เพิ่มทรัพยากรให้ ${Number(summary.rewarded_students).toLocaleString("th-TH")} คน จากคะแนนสูงสุดที่เพิ่ม ${Number(summary.rewarded_score_increase || 0).toLocaleString("th-TH")} ข้อ${rewardParts.length ? ` (${rewardParts.join(" · ")})` : ""}`
+      : " · ไม่มีคะแนนสูงสุดใหม่ที่ได้รับทรัพยากรเพิ่ม"
+    : " · ชุดนี้ไม่มีรางวัลทรัพยากรเกม";
+  message.textContent = `ปรับคะแนนแล้ว ${Number(summary.total_submissions || 0).toLocaleString("th-TH")} รายการ · คะแนนเปลี่ยน ${Number(summary.changed || 0).toLocaleString("th-TH")} รายการ (เพิ่ม ${Number(summary.increased || 0).toLocaleString("th-TH")} · ลด ${Number(summary.decreased || 0).toLocaleString("th-TH")})${rewardSummary}`;
+  await fetchAdminAllData();
 }
 
 // Convert date strings back to format yyyy-MM-ddThh:mm for datetime-local input
@@ -1991,13 +2054,7 @@ async function saveAdminExamSettings(e) {
   msgDiv.innerText = "";
   
   // Aggregate answers from 30 dropdown inputs
-  const answerArray = [];
-  for (let i = 1; i <= 30; i++) {
-    const val = document.getElementById(`admin-key-q${i}`).value;
-    answerArray.push(val);
-  }
-  
-  const answersCsv = answerArray.join(",");
+  const answersCsv = getAdminAnswerKeyFromForm();
   const topics = document.getElementById("admin-question-topics").value
     .split(/\r?\n/)
     .map(topic => topic.trim());
@@ -2418,12 +2475,13 @@ function handleOfflineApi(action, data) {
     return { success: true, data: leaderboardList };
     
   } else if (action === "getAdminData") {
-    if (data.username !== "admin" || data.password !== "admin1234") {
+    if (data.token !== "offline-teacher" && (data.username !== "admin" || data.password !== "admin1234")) {
       return { success: false, message: "สิทธิ์แอดมินโหมดเดโมไม่ถูกต้อง" };
     }
     
     return {
       success: true,
+      token: "offline-teacher",
       data: {
         users: dbUsers.map(u => ({ username: u.username, nickname: u.nickname, role: u.role })),
         exams: dbExams,
@@ -2433,7 +2491,7 @@ function handleOfflineApi(action, data) {
     };
     
   } else if (action === "updateExamSettings") {
-    if (data.username !== "admin" || data.password !== "admin1234") {
+    if (data.token !== "offline-teacher" && (data.username !== "admin" || data.password !== "admin1234")) {
       return { success: false, message: "ไม่มีสิทธิ์ในการแก้ไขการตั้งค่า (เดโมโหมด)" };
     }
     
@@ -2452,9 +2510,78 @@ function handleOfflineApi(action, data) {
     
     localStorage.setItem("mock_exams", JSON.stringify(dbExams));
     return { success: true, message: "อัปเดตข้อมูลสำเร็จในตัวจำลองเดโม" };
+  } else if (action === "regradeExamSubmissions") {
+    if (data.token !== "offline-teacher" && (data.username !== "admin" || data.password !== "admin1234")) {
+      return { success: false, message: "ไม่มีสิทธิ์ในการปรับคะแนน (เดโมโหมด)" };
+    }
+    const exam = dbExams.find(item => String(item.set_id) === String(data.set_id));
+    if (!exam || !exam.answers) return { success: false, message: "ไม่พบเฉลยของข้อสอบชุดนี้" };
+    const correctAnswers = String(exam.answers).split(",");
+    let total = 0, changed = 0, increased = 0, decreased = 0;
+    const highestByStudent = new Map();
+    const oldHighestByStudent = new Map();
+    const studentNames = new Map();
+    dbSubmissions.forEach(submission => {
+      if (String(submission.set_id) !== String(data.set_id)) return;
+      total++;
+      const oldScore = Number(submission.score) || 0;
+      const answers = String(submission.answers || "").split(",");
+      const newScore = correctAnswers.reduce((score, answer, index) => score + (String(answers[index] || "").trim() === String(answer).trim() ? 1 : 0), 0);
+      submission.score = newScore;
+      if (newScore !== oldScore) { changed++; if (newScore > oldScore) increased++; else decreased++; }
+      const key = String(submission.username || "").toLowerCase();
+      highestByStudent.set(key, Math.max(highestByStudent.get(key) ?? -1, newScore));
+      oldHighestByStudent.set(key, Math.max(oldHighestByStudent.get(key) ?? -1, oldScore));
+      studentNames.set(key, submission.nickname || dbUsers.find(item => String(item.username).toLowerCase() === key)?.nickname || key);
+    });
+    if (Number(data.set_id) <= 5) {
+      const passingScore = Number(exam.passing_score ?? 15);
+      highestByStudent.forEach((score, username) => {
+        const existing = dbReExams.find(item => String(item.username).toLowerCase() === username && String(item.set_id) === String(data.set_id));
+        const nextStatus = score >= passingScore || existing?.status === "passed" ? "passed" : "pending";
+        if (existing) existing.status = nextStatus;
+        else {
+          const student = dbUsers.find(item => String(item.username).toLowerCase() === username);
+          dbReExams.push({ username, nickname: student?.nickname || username, set_id: data.set_id, status: nextStatus, assigned_at: new Date().toISOString() });
+        }
+      });
+      localStorage.setItem("mock_re_exams", JSON.stringify(dbReExams));
+    }
+    const rewardRates = {
+      "7": { coins: 100, wood: 40, stone: 20, brick: 10, sand: 5 },
+      "8": { coins: 110, wood: 30, stone: 35, brick: 12, sand: 6 },
+      "9": { coins: 130, wood: 25, stone: 30, brick: 20, sand: 8 },
+      "10": { coins: 150, wood: 15, stone: 35, brick: 18, sand: 11 }
+    };
+    const rewardRate = rewardRates[String(data.set_id)] || null;
+    const gameRewardTotals = { coins: 0, wood: 0, stone: 0, brick: 0, sand: 0, cement: 0 };
+    let rewardedStudents = 0;
+    let rewardedScoreIncrease = 0;
+    if (rewardRate && typeof offlineGameProfile === "function" && typeof saveOfflineGameProfile === "function") {
+      highestByStudent.forEach((newBest, username) => {
+        const rewardBestKey = `mock_game_reward_best_${username}_${data.set_id}`;
+        const storedBest = Number(localStorage.getItem(rewardBestKey));
+        const previousBest = Number.isFinite(storedBest) ? storedBest : Math.max(0, oldHighestByStudent.get(username) || 0);
+        const addedCorrect = Math.max(0, newBest - previousBest);
+        localStorage.setItem(rewardBestKey, String(Math.max(previousBest, newBest)));
+        if (!addedCorrect) return;
+        const profile = offlineGameProfile(username, studentNames.get(username) || username);
+        Object.keys(gameRewardTotals).forEach(key => {
+          const amount = Number(rewardRate[key] || 0) * addedCorrect;
+          const before = Number(profile.resources[key] || 0);
+          profile.resources[key] = key === "coins" ? before + amount : Math.min(Number(profile.storage_capacity || 0), before + amount);
+          gameRewardTotals[key] += profile.resources[key] - before;
+        });
+        saveOfflineGameProfile(profile);
+        rewardedStudents++;
+        rewardedScoreIncrease += addedCorrect;
+      });
+    }
+    localStorage.setItem("mock_submissions", JSON.stringify(dbSubmissions));
+    return { success: true, message: `ปรับคะแนนข้อสอบชุดที่ ${data.set_id} ใหม่เรียบร้อยแล้ว`, data: { set_id: Number(data.set_id), total_submissions: total, changed, increased, decreased, unchanged: total - changed, reward_eligible: Boolean(rewardRate), rewarded_students: rewardedStudents, rewarded_score_increase: rewardedScoreIncrease, game_reward_totals: gameRewardTotals } };
     
   } else if (action === "toggleReExamStatus") {
-    if (data.username !== "admin" || data.password !== "admin1234") {
+    if (data.token !== "offline-teacher" && (data.username !== "admin" || data.password !== "admin1234")) {
       return { success: false, message: "ไม่มีสิทธิ์ในการเข้าถึง (เดโมโหมด)" };
     }
     
