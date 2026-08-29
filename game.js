@@ -497,7 +497,7 @@ function renderGameTargetCard(target) {
   const availableAt = target.availability.available_at ? new Date(target.availability.available_at).getTime() : 0;
   const reason = disabled ? `<div class="target-availability-note"><strong>${escapeHtml(target.availability.message)}</strong>${availableAt ? `<span>เปิดใน <b data-available-at="${availableAt}">${formatGameDuration(availableAt - Date.now())}</b></span>` : ""}</div>` : `<div class="target-availability-note is-ready"><span>เลือกจำนวนทหารหรือสอดแนมก่อนโจมตี</span></div>`;
   const picker = Object.keys(gameCatalog.units).map(key => `<label>${gameCatalog.units[key].icon} ${escapeHtml(gameCatalog.units[key].name)}<input class="form-control" data-army-unit="${key}" type="number" min="0" max="${Number(gameState.units[key] || 0)}" value="${key === "infantry" ? Math.min(5, Number(gameState.units[key] || 0)) : 0}" ${disabled ? "disabled" : ""}></label>`).join("");
-  return `<article class="game-card game-target-card ${disabled ? "is-unavailable" : "is-available"}" data-target-card="${escapeHtml(target.username)}" aria-disabled="${disabled}">
+  return `<article class="game-card game-target-card ${disabled ? "is-unavailable" : "is-available"}" data-target-card="${escapeHtml(target.username)}" data-target-nickname="${escapeHtml(target.nickname)}" data-target-house-level="${Number(target.house_level || 1)}" aria-disabled="${disabled}">
     <div class="game-card-head"><div class="game-card-title"><span>🧑‍🚀</span><div><h3>${escapeHtml(target.nickname)}</h3><small>บ้าน Lv.${target.house_level}</small></div></div><span class="target-status-badge ${disabled ? "is-waiting" : "is-ready"}">${statusLabel}</span></div>
     <div class="target-intel-row"><span>🏆 <strong>${formatGameNumber(target.trophy)}</strong><small>Trophy</small></span><span>🛡️ <strong>${formatGameNumber(target.defense_estimate)}</strong><small>ป้องกันโดยประมาณ</small></span><span>📦 <strong>${escapeHtml(target.loot_indicator)}</strong><small>ทรัพยากร</small></span></div>${reason}
     <div class="game-army-picker">${picker}</div><div class="game-scout-box hidden" data-scout-result></div>
@@ -514,17 +514,157 @@ async function scoutTarget(username) {
   box.innerHTML = `<strong>รายงานสอดแนม</strong><br>🛡️ ป้องกันประมาณ ${formatGameNumber(data.defense_estimate)}<br>🪖 ทหาร: ราบ ${data.army_hint.infantry}, ธนู ${data.army_hint.archer}, ม้า ${data.army_hint.cavalry}<br>🎒 Loot โดยประมาณ: ${Object.keys(data.loot_estimate).map(key => `${GAME_RESOURCE_META[key][0]} ${formatGameNumber(data.loot_estimate[key])}`).join(" · ")}`;
 }
 
+function waitForBattleAnimation(ms) {
+  return new Promise(resolve => window.setTimeout(resolve, ms));
+}
+
+function renderAttackArmy(army) {
+  return Object.keys(gameCatalog.units).map((key, index) => {
+    const count = Math.max(0, Number(army[key] || 0));
+    if (!count) return "";
+    const unit = gameCatalog.units[key];
+    return `<div class="battle-unit-wave" style="--unit-row:${index};--unit-delay:${index * 85}ms" aria-hidden="true"><span>${escapeHtml(unit.icon)}</span><b>×${formatGameNumber(count)}</b></div>`;
+  }).join("");
+}
+
+function renderAttackArmySummary(army) {
+  return Object.keys(gameCatalog.units).map(key => {
+    const count = Math.max(0, Number(army[key] || 0));
+    if (!count) return "";
+    const unit = gameCatalog.units[key];
+    return `<span><i aria-hidden="true">${escapeHtml(unit.icon)}</i><small>${escapeHtml(unit.name)}</small><strong>×${formatGameNumber(count)}</strong></span>`;
+  }).join("");
+}
+
+function startAttackAnimation({ nickname, houseLevel, army }) {
+  const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const overlay = document.createElement("div");
+  overlay.className = "battle-animation-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "battle-animation-title");
+  overlay.innerHTML = `<div class="battle-animation-card" tabindex="-1">
+    <header class="battle-animation-header">
+      <div><p class="game-kicker">LIVE BATTLE</p><h2 id="battle-animation-title">กำลังบุกบ้าน ${escapeHtml(nickname)}</h2></div>
+      <span class="battle-target-level">🏠 Lv.${Number(houseLevel || 1)}</span>
+    </header>
+    <div class="battle-phase-track" aria-hidden="true"><span class="is-active">1 จัดทัพ</span><span>2 เคลื่อนพล</span><span>3 ปะทะ</span><span>4 ผลการรบ</span></div>
+    <div class="battle-field" data-battle-phase="forming">
+      <div class="battle-sky"><span class="battle-cloud cloud-one">☁️</span><span class="battle-cloud cloud-two">☁️</span></div>
+      <div class="battle-attacker-base"><span>⛺</span><small>กองทัพของคุณ</small></div>
+      <div class="battle-unit-waves">${renderAttackArmy(army)}</div>
+      <div class="battle-impact" aria-hidden="true">💥</div>
+      <div class="battle-defender-base"><span>🏰</span><small>${escapeHtml(nickname)}</small><b>บ้าน Lv.${Number(houseLevel || 1)}</b></div>
+      <div class="battle-ground"></div>
+    </div>
+    <div class="battle-status" role="status" aria-live="polite"><span class="battle-status-icon">🪖</span><div><strong data-battle-status-title>กำลังจัดแถวทหาร</strong><small data-battle-status-detail>ตรวจนับกำลังพลก่อนออกเดินทาง</small></div></div>
+    <div class="battle-army-summary" aria-label="ทหารที่ส่งไป">${renderAttackArmySummary(army)}</div>
+    <div class="battle-result hidden" data-battle-result></div>
+    <div class="battle-actions"><button class="btn btn-secondary" data-battle-skip type="button">ดูผลทันที</button><button class="btn btn-primary hidden" data-battle-continue type="button">กลับไปเลือกคู่ต่อสู้</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  document.body.classList.add("battle-animation-open");
+  const previousFocus = document.activeElement;
+  const field = overlay.querySelector(".battle-field");
+  const title = overlay.querySelector("[data-battle-status-title]");
+  const detail = overlay.querySelector("[data-battle-status-detail]");
+  const phaseSteps = [...overlay.querySelectorAll(".battle-phase-track span")];
+  const skipButton = overlay.querySelector("[data-battle-skip]");
+  let skipped = false;
+  let readyResolved = false;
+  let resolveReady;
+  const ready = new Promise(resolve => { resolveReady = resolve; });
+  const markReady = () => {
+    if (readyResolved) return;
+    readyResolved = true;
+    resolveReady();
+  };
+  const setPhase = (phase, heading, description, step) => {
+    field.dataset.battlePhase = phase;
+    title.textContent = heading;
+    detail.textContent = description;
+    phaseSteps.forEach((item, index) => item.classList.toggle("is-active", index <= step));
+  };
+  skipButton.addEventListener("click", () => {
+    skipped = true;
+    setPhase("impact", "กองทัพเข้าปะทะแล้ว!", "กำลังรอผลการต่อสู้จากสนามรบ", 2);
+    skipButton.disabled = true;
+    markReady();
+  });
+  const handleKeydown = event => trapModalFocus(event, overlay);
+  document.addEventListener("keydown", handleKeydown);
+  window.requestAnimationFrame(() => overlay.querySelector(".battle-animation-card").focus());
+
+  (async () => {
+    await waitForBattleAnimation(reducedMotion ? 80 : 650);
+    if (skipped) return;
+    setPhase("marching", "กองทัพกำลังเคลื่อนพล", `มุ่งหน้าไปยังบ้านของ ${nickname}`, 1);
+    await waitForBattleAnimation(reducedMotion ? 100 : 1750);
+    if (skipped) return;
+    setPhase("impact", "กองทัพเข้าปะทะแล้ว!", "กำลังตัดสินผลจากพลังโจมตีและพลังป้องกัน", 2);
+    await waitForBattleAnimation(reducedMotion ? 100 : 900);
+    markReady();
+  })();
+
+  const close = () => {
+    document.removeEventListener("keydown", handleKeydown);
+    overlay.remove();
+    document.body.classList.remove("battle-animation-open");
+    if (previousFocus && typeof previousFocus.focus === "function" && document.contains(previousFocus)) previousFocus.focus();
+  };
+
+  return {
+    ready,
+    async finish(result) {
+      const won = result.outcome === "win";
+      setPhase(won ? "won" : "lost", won ? "บุกสำเร็จ!" : "กองทัพถอยกลับ", won ? "ยึดทรัพยากรและรับ Trophy สำเร็จ" : "ฐานของคู่ต่อสู้ป้องกันไว้ได้", 3);
+      overlay.querySelector(".battle-status-icon").textContent = won ? "🏆" : "🛡️";
+      const loot = won && result.loot ? `<div><small>ทรัพยากรที่ยึดได้</small><strong>${gameCostText(result.loot)}</strong></div>` : "";
+      const resultBox = overlay.querySelector("[data-battle-result]");
+      resultBox.classList.remove("hidden");
+      const trophyDelta = Number(result.trophy_delta || 0);
+      resultBox.innerHTML = `<div><small>พลังโจมตี</small><strong>⚔️ ${formatGameNumber(result.attack_power)}</strong></div><div><small>พลังป้องกัน</small><strong>🛡️ ${formatGameNumber(result.defense_power)}</strong></div><div><small>Trophy</small><strong class="${trophyDelta >= 0 ? "is-positive" : "is-negative"}">${trophyDelta > 0 ? "+" : ""}${trophyDelta.toLocaleString("th-TH")}</strong></div>${loot}`;
+      skipButton.classList.add("hidden");
+      const continueButton = overlay.querySelector("[data-battle-continue]");
+      continueButton.classList.remove("hidden");
+      continueButton.focus();
+      await new Promise(resolve => continueButton.addEventListener("click", resolve, { once: true }));
+      close();
+    },
+    async fail(message) {
+      setPhase("error", "การโจมตีไม่สำเร็จ", message || "ไม่สามารถรับผลการต่อสู้ได้", 2);
+      overlay.querySelector(".battle-status-icon").textContent = "⚠️";
+      skipButton.classList.add("hidden");
+      const continueButton = overlay.querySelector("[data-battle-continue]");
+      continueButton.textContent = "กลับไปตรวจสอบกองทัพ";
+      continueButton.classList.remove("hidden");
+      continueButton.focus();
+      await new Promise(resolve => continueButton.addEventListener("click", resolve, { once: true }));
+      close();
+    }
+  };
+}
+
+function createGameAttackRequestId() {
+  const randomPart = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Math.random().toString(36).slice(2, 10)}${Math.random().toString(36).slice(2, 10)}`;
+  return `attack:${Date.now()}:${randomPart}`;
+}
+
 async function attackTarget(username) {
   const card = document.querySelector(`[data-target-card="${CSS.escape(username)}"]`), army = {};
   card.querySelectorAll("[data-army-unit]").forEach(input => { army[input.dataset.armyUnit] = Number(input.value || 0); });
   if (!Object.values(army).some(value => value > 0)) return setGameFeedback("❌ ต้องเลือกกองทัพอย่างน้อย 1 หน่วย", "error");
-  if (!await showConfirm(`ส่งกองทัพโจมตี ${username}? การโจมตีใช้ Energy 1 และจะยกเลิก Shield ของคุณทันที`)) return;
-  const requestId = `attack:${currentUser.username}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
-  showLoading("กำลังประมวลผลการต่อสู้...");
-  const res = await apiCall("attackGameTarget", { target_username: username, army, request_id: requestId });
-  hideLoading();
-  if (!res.success) return showGameApiError(res);
+  const nickname = card.dataset.targetNickname || username;
+  const houseLevel = Number(card.dataset.targetHouseLevel || 1);
+  if (!await showConfirm(`ส่งกองทัพโจมตี ${nickname}? การโจมตีใช้ Energy 1 และจะยกเลิก Shield ของคุณทันที`)) return;
+  const requestId = createGameAttackRequestId();
+  const animation = startAttackAnimation({ nickname, houseLevel, army });
+  const [res] = await Promise.all([apiCall("attackGameTarget", { target_username: username, army, request_id: requestId }), animation.ready]);
+  if (!res.success) { await animation.fail(res.message); return showGameApiError(res); }
   const result = res.data, won = result.outcome === "win";
+  await animation.finish(result);
   setGameFeedback(`${won ? "🎉 ชนะ" : "💥 แพ้"} · พลัง ${formatGameNumber(result.attack_power)} ต่อ ${formatGameNumber(result.defense_power)} · Trophy ${result.trophy_delta > 0 ? "+" : ""}${result.trophy_delta}${won ? ` · Loot ${gameCostText(result.loot)}` : ""}`, won ? "success" : "error");
   await loadGameProfile(true); await loadGameTargets();
 }
